@@ -91,9 +91,9 @@ class Command
     return if option_range.include? flag_inputs.length
 
     error_message = [
-      "Invalid number or type of inputs: #{inputs}",
-      "Flags: #{option_assignments} (#{option_range})",
-      "Args: (#{parameter_range})"
+        "Invalid number or type of inputs: #{inputs}",
+        "Flags: #{option_assignments} (#{option_range})",
+        "Args: (#{parameter_range})"
     ]
 
     raise InputError, error_message
@@ -103,7 +103,7 @@ class Command
     self.argument_inputs = inputs.reject { |input| flag_inputs.include? input }
     return if parameter_range.include? argument_inputs.length
 
-    raise InputError, "Wrong number of input arguments: #{argument_inputs.length} / #{parameter_range}"
+    raise InputError, "Wrong number of input arguments #{argument_inputs}: #{argument_inputs.length} / #{parameter_range}"
   end
 
   # Takes the valid flag hash from initialization and extracts every valid
@@ -111,7 +111,7 @@ class Command
   # @return [Void]
   def define_options
     self.options = option_assignments.keys.map { |key| "--#{key}" } +
-                   option_assignments.values.flatten.map { |value| value.start_with?('-') ? value : "-#{value}" }
+        option_assignments.values.flatten.map { |value| value.start_with?('-') ? value : "-#{value}" }
 
     raise FlagAssignmentError if options.any? { |flag| HELP_OPTIONS.include? flag }
 
@@ -125,6 +125,7 @@ class Command
 
   def accept_flags
     return self.flags = [] if flag_inputs.nil?
+    return self.flags = flag_inputs if flag_inputs.empty?
 
     extraction_range = option_range.map { |i| i - 1 }
     extraction_range = (extraction_range.min..extraction_range.max)
@@ -137,10 +138,11 @@ class Command
   end
 
   def accept_arguments
-    return self.arguments = [] if argument_inputs.nil?
+    return self.arguments = [] if argument_inputs.nil? || argument_inputs.empty?
 
-    extraction_range = parameter_range.map { |i| i - 1 }
-    extraction_range = (extraction_range.min..extraction_range.max)
+    minimum = [parameter_range.min - 1, 0].max
+    maximum = [parameter_range.max - 1, 9].min
+    extraction_range = (minimum..maximum)
 
     self.arguments = argument_inputs[extraction_range]
     self.arguments = arguments[0] if arguments.length == 1
@@ -164,9 +166,9 @@ class Command
 
   def flag_error_packet(flag)
     {
-      input: flag,
-      position: inputs.index(flag),
-      acceptable: options
+        input: flag,
+        position: inputs.index(flag),
+        acceptable: options
     }
   end
 
