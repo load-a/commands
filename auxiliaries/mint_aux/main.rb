@@ -3,7 +3,7 @@
 require_relative '../_command/command'
 require_relative 'command_generator'
 
-class Make < Command
+class Mint < Command
   include CommandGenerator
 
   def initialize(argv, option_range: (1..1), parameter_range: (1..1), case_sensitive: true)
@@ -29,7 +29,7 @@ class Make < Command
     super
     check_for_script_flags
 
-    file_path = determine_file_path arguments
+    file_path = determine_file_path parameters
 
     create_file(**generate_path_and_contents(file_path))
   end
@@ -38,16 +38,16 @@ class Make < Command
   # Otherwise it creates the path starting from the directory from which the user called this command.
   def determine_file_path(name)
     if name.include? '/'
-      self.arguments = name.split('/').last
+      self.parameters = name.split('/').last
       name
     else
-      "#{ORIGINAL_PATH}/#{name}"
+      "#{CALL_PATH}/#{name}"
     end
   end
 
   def remove_script
-    script = "#{MAIN_PATH}/#{arguments}"
-    script_aux = "#{MAIN_AUX_PATH}/#{arguments}_aux"
+    script = "#{MAIN_PATH}/#{parameters}"
+    script_aux = "#{AUXILIARIES_PATH}/#{parameters}_aux"
     raise InputError, "Script and Auxiliary folder don't exist. #{script_aux}" unless scripts_exist?(script, script_aux)
 
     `rm "#{script}"`
@@ -63,9 +63,9 @@ class Make < Command
 
   def check_for_script_flags
     if %w[-scr -s+ --script].include? flags
-      raise InputError, 'Command Name cannot contain a space.' if arguments.include? ' '
+      raise InputError, 'Command Name cannot contain a space.' if parameters.include? ' '
 
-      generate_script(arguments)
+      generate_script(parameters)
     elsif %w[-rm --remove].include? flags
       remove_script
     end
@@ -77,8 +77,8 @@ class Make < Command
       bash: ['.sh', '#!/usr/bin/env bash'],
       c: ['.c', File.read('templates/c_template.c')],
       cpp: ['.cpp', File.read('templates/cpp_template.cpp')],
-      java: ['.java', File.read('templates/java_main_template.java').gsub('THIS', arguments.capitalize)],
-      java_plus: ['.java', File.read('templates/java_template.java').gsub('THIS', arguments.capitalize)],
+      java: ['.java', File.read('templates/java_main_template.java').gsub('THIS', parameters.capitalize)],
+      java_plus: ['.java', File.read('templates/java_template.java').gsub('THIS', parameters.capitalize)],
       # lua: ['.lua', File.read('templates/lua_template.lua')],
       ruby: ['.rb', File.read('templates/ruby_template.rb')],
       rust: ['.rs', File.read('templates/rust_template.rs')],

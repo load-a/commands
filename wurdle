@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-require_relative 'auxiliary/wurdle_aux/main'
+require_relative 'auxiliaries/wurdle_aux/main'
 
 Wurdle.new(ARGV).run

@@ -1,0 +1,6 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require_relative 'auxiliaries/comtest_aux/main'
+
+Comtest.new(ARGV, flag_limit: (0..9), parameter_limit: (0..9), case_sensitive: false).run
