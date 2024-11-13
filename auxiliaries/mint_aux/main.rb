@@ -6,8 +6,8 @@ require_relative 'command_generator'
 class Mint < Command
   include CommandGenerator
 
-  def initialize(argv, option_range: (1..1), parameter_range: (1..1), case_sensitive: true)
-    self.option_assignments = {
+  def initialize(argv, flag_limit: (1..1), parameter_limit: (1..1), case_sensitive: true)
+    self.assigned_options = {
       bash: 'b',
       c: 'c',
       command: 'c+',

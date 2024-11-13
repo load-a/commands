@@ -30,11 +30,11 @@ class Command
 
   attr_writer received: Hash[Symbol, Array[String]]
 
-  attr_writer found: Hash[Symbol, Array[String]]
+  attr_writer accepted: Hash[Symbol, Array[String]]
 
-  attr_writer option_assignments: Hash[Symbol, String | Array[String]]
+  attr_writer assigned_options: Hash[Symbol, String | Array[String]]
 
-  attr_writer keyword_assignments: Hash[Symbol, String]
+  attr_writer assigned_keywords: Hash[Symbol, String]
 
   attr_writer options: Array[String]
 
@@ -65,21 +65,23 @@ class Command
   # @return [Void]
   def define_all_options: () -> void
 
-  def extract_received_inputs: () -> void
+  def receive_inputs: () -> void
 
-  def extract_possible_flags: () -> void
+  def receive_flags: () -> void
 
-  def extract_possible_keywords: () -> void
+  def receive_parameters: () -> void
 
   def extract_possible_parameters: () -> void
 
-  def find_inputs: () -> void
+  def accept_inputs: () -> void
 
-  def find_flags: () -> void
+  def create_acceptance_hash: () -> void
 
-  def find_keywords: () -> void
+  def accept_flags: () -> void
 
-  def find_parameters: () -> void
+  def accept_keywords: () -> void
+
+  def accept_parameters: () -> void
 
   # Prints the command's help file.
   def help: () -> void
@@ -94,13 +96,13 @@ class Command
 
   attr_reader inputs: Array[String]
 
-  attr_reader received: Hash[Symbol, Array[String]]
+  attr_reader received: Hash[Symbol, Array[String] | Hash[Symbol, String]]
 
-  attr_reader found: Hash[Symbol, Array[String]]
+  attr_reader accepted: Hash[Symbol, Array[String] | Hash[Symbol, untyped]]
 
-  attr_reader option_assignments: Hash[Symbol, String | Array[String]]
+  attr_reader assigned_options: Hash[Symbol, String | Array[String]]
 
-  attr_reader keyword_assignments: Hash[Symbol, String]
+  attr_reader assigned_keywords: Hash[Symbol, String]
 
   attr_reader options: Array[String]
 

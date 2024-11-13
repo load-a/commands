@@ -1,28 +1,26 @@
 # frozen_string_literal: true
 
-require_relative '../_command/command'
-
 # @todo This actually makes for a good error message.
 #   Try to get this to show up either as part of the help message or some kind of error
 
-class Comtest < Command
-  def initialize(_argv, flag_limit: (0..1), parameter_limit: (0..2), case_sensitive: :keywords)
-    self.option_assignments = {
-      test_flag_one: 'flg',
-      test_flag_two: 'tf+'
-    }
+class Inspector
+  attr_accessor :parent
 
-    self.keyword_assignments = {
-      int: 'Some kind of Integer',
-      string: 'Some kind of String'
-    }
+  def initialize(parent)
+    self.parent = parent
+    run
+  end
 
-    super
+  private def method_missing(name, *args)
+    parent.send(name, *args)
+  end
+
+  def repond_to_missing?
+    true
   end
 
   def run
-    super
-    puts 'INPUTS:', "\t#{inputs}"
+    puts "INSPECTION ON #{parent}", 'INPUTS:', "\t#{inputs}"
     puts check_flags
     puts check_args
     puts check_keywords
@@ -57,21 +55,22 @@ class Comtest < Command
       "\tHome: #{HOME_PATH}",
       "\tMain: #{MAIN_PATH}",
       "\tAux.: #{AUXILIARIES_PATH}",
-      "\tExec: #{@execution_path}"
+      "\tExec: #{execution_path}"
     ]
   end
 
   def check_keywords
-    fraction = keyword_assignments.keys.count { |expected_key| keywords.keys.include? expected_key }
-    fulfilled = case keyword_assignments.size - fraction
+    fraction = assigned_keywords.keys.count { |expected_key| uses_keyword? expected_key }
+    fulfilled = case assigned_keywords.size - fraction
                 when 0 then 'Yes'
-                when keyword_assignments.size then 'No'
+                when assigned_keywords.size then 'No'
                 else 'Some'
                 end
 
-    ['KEYWORDS:', "\tExpected:",
-     keyword_assignments.map { |assignment, explanation| "\t* #{assignment}: #{explanation}" }.join("\n"),
-     "\tReceived: #{received_keywords}", "\tAccepted: #{keywords}",
-     "\tFulfilled: #{fulfilled} (#{fraction}/#{keyword_assignments.size})"]
+    ['KEYWORDS:', "\tExpected: {",
+     assigned_keywords.map { |assignment, explanation| "\t  #{assignment} -> #{explanation}" }.join("\n"),
+     "\t}",
+     "\tReceived: #{received[:keywords]}", "\tAccepted: #{keywords}",
+     "\tFulfilled: #{fulfilled} (#{fraction}/#{assigned_keywords.size})"]
   end
 end

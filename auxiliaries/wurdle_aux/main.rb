@@ -14,14 +14,21 @@ class Wurdle < Command
   attr_accessor :word, :number_of_guesses, :wrong_letters, :found_letters, :revealed_letters
 
   def initialize(argv, flag_limit: (0..0), parameter_limit: (0..2), case_sensitive: false)
-    self.option_assignments = Hash.new(0)
+    self.assigned_options = {
+      random: 'r'
+    }
+    self.assigned_keywords = {
+      word: 'The word to solve',
+      count: 'The number of characters required (not yet implemented)',
+      guesses: 'The number of guesses allowed (not yet implemented)'
+    }
 
     super
 
-    self.word = parameters[0]
+    self.word = keywords[:word]
     self.number_of_guesses = parameters[1].to_i.clamp(1..9) if parameters.length > 1
 
-    self.word = WORDS.sample if word == 'random' || parameters.empty?
+    self.word = WORDS.sample if received_flags.any? { |flag| flag }
     self.word = word.upcase
 
     self.number_of_guesses ||= word.length + 1
@@ -35,6 +42,8 @@ class Wurdle < Command
     super
 
     puts opening_line
+    reveal_word
+    exit
 
     loop do
       guess = ask("What is your guess? (#{number_of_guesses + 1})").upcase[...word.length]

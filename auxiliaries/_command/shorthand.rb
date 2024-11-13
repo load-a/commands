@@ -16,15 +16,15 @@ module Shorthand
   # else if you want to work with the values call these methods
 
   def flags
-    simplify found[:flags]
+    simplify accepted[:flags]
   end
 
   def parameters
-    simplify found[:parameters]
+    simplify accepted[:parameters]
   end
 
   def keywords
-    found[:keywords] # This is a Hash; no simplification.
+    accepted[:keywords] # This is a Hash; no simplification.
   end
 
   def received_flags
