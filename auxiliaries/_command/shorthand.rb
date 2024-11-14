@@ -24,7 +24,7 @@ module Shorthand
   end
 
   def keywords
-    accepted[:keywords] # This is a Hash; no simplification.
+    accepted[:default_settings] # This is a Hash; no simplification.
   end
 
   def received_flags
@@ -36,6 +36,6 @@ module Shorthand
   end
 
   def received_keywords
-    simplify received[:keywords]
+    simplify received[:default_settings]
   end
 end

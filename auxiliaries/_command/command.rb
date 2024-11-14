@@ -1,14 +1,6 @@
 # frozen_string_literal: true
 
-require_relative 'parameter_handler'
-require_relative 'flag_handler'
-require_relative 'prompter'
-require_relative 'command_errors'
-require_relative 'filer'
-require_relative 'shorthand'
-require_relative 'inspector_aux/main'
 require_relative 'class_extensions'
-require_relative 'keyword_handler'
 
 # Where the command was summoned from.
 CALL_PATH = Dir.pwd
@@ -22,152 +14,192 @@ MAIN_PATH = "#{HOME_PATH}/commands"
 # The Command Class's aux folder, which holds all the other aux folders
 AUXILIARIES_PATH = "#{MAIN_PATH}/auxiliaries"
 
-# @todo This is getting out of hand.
-#   Instead of having stages in which everything is processed at the same time, it should be organized
-#   by what is being processed. Flags, Keywords then parameters. I've also decided on a strictness hierarchy:
-#   1. Flags - the most strict. These are for hard functionality and state changes.
-#   2. Keywords - more flexibility. Use to attach input to a specific state change (instead of being positional)
-#   3. Parameters - Least strict. Anyting else the user submits
-#   There should also a module for checking user input (import from Cho Han). i.e
-#   def await_specific_input { |answer, program_state| break if true }; end
-# The base class for all shell commands.
-class Command
-  include KeywordHandler
-  include ParameterHandler
-  include FlagHandler
-  include CommandErrors
-  include Prompter
-  include Filer
-  include Shorthand
+module Normalize
+  module_function
 
-  private
+  def to_array(object, flatten: false)
+    return [] if object.nil?
 
-  HELP_OPTIONS = %w[-h --help -i --inspect].freeze
-  INPUT_KEYS = %i[flags parameters keywords].freeze
-
-  attr_writer :inputs, :received, :accepted,
-              :assigned_options, :assigned_keywords,
-              :options, :flag_limit, :parameter_limit,
-              :execution_path, :case_sensitivity
-
-  # @param argv [Array] This should always be ARGV
-  # @param flag_limit [Range] The minimum and maximum number of flags kept by the mint.
-  # @param parameter_limit [Range] The maximum number of parameters kept by the mint.
-  # @param case_sensitive [Boolean, Symbol]
-  def initialize(argv, flag_limit: (0..1), parameter_limit: (0..1), case_sensitive: false)
-    # EXAMPLE: These must show up in each child class's initialize method before calling super.
-    #
-    # self.option_assignments = {
-    #   test_flag_one: 'flg',
-    #   test_flag_two: 'tf+'
-    # }
-    #
-    # self.keyword_assignments = {
-    # word: 'Explanation',
-    # other_word: 'Other explanation'
-    # }
-    #
-    # super
-    #
-    self.inputs = argv.dup
-
-    self.case_sensitivity = normalize_case_sensitivity(case_sensitive)
-
-    initialize_hashes
-
-    self.flag_limit = clamp_range flag_limit
-    self.parameter_limit = clamp_range parameter_limit
-
-    process_inputs
-
-    initialize_execution_path
-
-    ARGV.clear # Must be cleared to allow for future user input
-    inspect if received[:flags].any? { |flag| HELP_OPTIONS[2..3].include? flag }
-  end
-
-  def normalize_case_sensitivity(settings)
-    settings.is_a?(Array) ? settings : [settings]
-  end
-
-  def initialize_hashes
-    self.assigned_options ||= Hash.new(0)
-    self.assigned_keywords ||= Hash.new(0)
-
-    self.received = Hash.new { |hash, key| hash[key] = [] }
-    INPUT_KEYS.each { |key| received[key] }
-
-    received[:keywords] = Hash.new(0)
-  end
-
-  def clamp_range(range, bounds: (0...10))
-    ([range.begin, bounds.min].max..[range.end, bounds.max].min)
-  end
-
-  def process_inputs
-    create_options_array
-    receive_inputs
-    accept_inputs
-    help if received[:flags].any? { |flag| HELP_OPTIONS[0..1].include? flag }
-  end
-
-  def receive_inputs
-    receive_possible_flags
-    receive_possible_keywords
-    receive_possible_parameters
-  end
-
-  def accept_inputs
-    create_acceptance_hash
-
-    accepted_flags
-    accept_keywords
-    accept_parameters
-    return if case_sensitivity.first == true
-
-    INPUT_KEYS[0..1].each do |key|
-      accepted[key].map!(&:downcase) if case_sensitivity == false || !case_sensitivity.include?(key)
+    if flatten
+      [object].flatten
+    else
+      object.is_a?(Array) ? object : [object]
     end
   end
 
-  def create_acceptance_hash
-    original_proc = received.default_proc
-    procless = received.dup
-    procless.default_proc = nil
-
-    self.accepted = Marshal.load(Marshal.dump(procless))
-
-    accepted.default_proc = original_proc
+  def from_array(array)
+    array.length == 1 ? array.first : array
   end
 
-  # Prints the command's help file.
-  def help
-    initialize_execution_path # @todo get rid of this
+  def from_string(string)
+    if string.numeric?
+      string.to_i
+    elsif %w[true false].include?(string.downcase)
+      (string == 'true')
+    else
+      string
+    end
+  end
+end
 
-    puts File.empty?('help.txt') ? "Valid Options: #{options}" : File.read('help.txt')
+class Command
+  MODE_PATTERN = /(^-[A-Za-z]{1,3}\+?$)|(^--[A-Za-z][A-Za-z0-9_]+$)/.freeze
+  SETTING_PATTERN = /\w+:\w+/.freeze
+  REQUIRED_OPTIONS = {
+    help: 'h',
+    inspect: 'i'
+  }.freeze
+  BASE_SETTINGS = {
+    case_sensitive: [true],
+    execution_directory: nil, # Where the events of the program think they are
+    send_directory: nil, # Where (if anywhere) the values of the program should be sent,
+    empty_return: nil # What you want to be returned in case of an empty result (experimental),
+  }.freeze
 
-    exit
+  attr_accessor :raw, :valid, :processed,
+                :modes, :settings, :parameters,
+                :default_options, :default_settings, # user modes and settings respectively
+                :options, :keywords, # ALL options or settings
+                :execution_directory, :send_directory
+
+  def initialize(argv)
+    # Assign SETTINGS and MODES up top
+
+    # Just the raw input from ARGV
+    self.raw = argv.dup # make it so new inputs get added to this?
+
+    # All valid pattern matches, categorized (plus any default settings)
+    # @todo Deal with possible nil values
+    self.valid = {
+      modes: raw.grep(MODE_PATTERN),
+      settings: raw.grep(SETTING_PATTERN),
+      parameters: raw.reject { |word| word =~ MODE_PATTERN || word =~ SETTING_PATTERN }
+    }
+
+    self.execution_directory = "#{AUXILIARIES_PATH}/_#{self.class.to_s.downcase}" # @todo CORRECT THIS AFTER TESTING
+    self.send_directory = execution_directory.dup
+
+    # @todo Merge into user defined settings later
+    default_settings[:execution_directory] ||= execution_directory
+    default_settings[:send_directory] ||= send_directory
+
+    # Options dont get merged into input modes. Its an independent list
+    default_options.merge REQUIRED_OPTIONS
+
+    self.default_settings = BASE_SETTINGS.dup.merge(default_settings.compact)
+
+    # Valid values that pass review (plus any default settings)
+    self.processed = {
+      modes: [],
+      settings: {},
+      parameters: []
+    }
+
+    self.options = []
+    self.keywords = {}
+
+    default_options.each do |key, value|
+      options << "--#{key}"
+      options << (value.start_with?('-') ? value : "-#{value}")
+    end
+
+    self.keywords = default_settings.keys
+
+    # UPDATE - act on user input here (redefine settings, select mode, etc.)
   end
 
-  def initialize_execution_path
-    self.execution_path = "#{AUXILIARIES_PATH}/#{self.class.to_s.downcase}_aux"
-    Dir.chdir(execution_path)
+  def change_directories
+    unless processed[:settings][:execution_directory].nil?
+      self.execution_directory = processed[:settings][:execution_directory]
+    end
+
+    self.send_directory = processed[:settings][:send_directory] unless processed[:settings][:send_directory].nil?
+
+    Dir.chdir execution_directory
   end
 
-  public
+  def get_modes
+    validate_modes
+    process_modes
+  end
 
-  attr_reader :inputs, :received, :accepted,
-              :assigned_options, :assigned_keywords,
-              :options, :flag_limit, :parameter_limit,
-              :execution_path, :case_sensitivity
+  def validate_modes
+    valid[:modes]
+  end
 
-  def run
-    # In child classes: 'super' should be at the top
-    # If flag validation is not necessary, dont use 'super'
-    validate_flags unless options.empty?
+  def process_modes
+    valid[:modes].each do |mode|
+      mode = mode.downcase if convert_to_downcase?(:modes)
+      processed[:modes] << mode if options.include?(mode)
+    end
+  end
+
+  def convert_to_downcase?(type)
+    !(default_settings[:case_sensitive].include?(type) ||
+        default_settings[:case_sensitive] == [true])
+  end
+
+  def get_settings
+    validate_settings
+    process_settings
+  end
+
+  # POSSIBLY NOT NEEDED
+  def validate_settings
+    # valid[:settings].each do |setting|
+    #   key, value = setting.split(':', 2)
+    #   # raise "cannot overwrite default settings" if @_default_settings.include?(key)
+    #   valid[:settings][key] = value
+    # end
+    #
+    # valid[:settings].merge default_settings unless valid[:settings] == default_settings
+  end
+
+  def process_settings
+    valid[:settings].each do |key_pair|
+      key_pair = key_pair.downcase if convert_to_downcase?(:settings)
+      key, value = key_pair.split(':', 2)
+      processed[:settings][key.to_sym] = Normalize.from_string(value) if keywords.include? key.to_sym
+    end
+  end
+
+  def process_parameters
+    processed[:parameters] = if convert_to_downcase?(:parameters)
+                               valid[:parameters].map(&:downcase)
+                             else
+                               valid[:parameters]
+                             end
   end
 
   def inspect
-    Inspector.new(self)
+    # show inspection screen
+  end
+
+  def help
+    # Show help screen
+  end
+
+  def output
+    converted_settings = processed[:settings].map do |key, value|
+      "#{key}:#{value}"
+    end
+
+    converted_parameters = processed[:parameters].map do |parameter|
+      format '"%s"', parameter
+    end
+
+    "#{processed[:modes].join(' ')} #{converted_settings.join(' ')} #{converted_parameters.join(' ')}"
+  end
+
+  def run
+    get_modes
+    get_settings
+    process_parameters
+
+    type = :none
+    puts "TYPE: #{type}", "RAW: #{raw}", "VALID: #{valid}",
+         "PROCESSED: #{processed}"
+    puts "OPTIONS: #{options}", "KEYWORDS: #{keywords}", "CASE: #{default_settings[:case_sensitive]}",
+         "OUTPUT: #{output}"
   end
 end

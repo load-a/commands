@@ -1,26 +1,26 @@
-module FlagHandler
+module ModeHandler
   # Takes the valid flag hash from initialization and extracts every valid
   # flag from it
   # @return [Void]
   def create_options_array
-    return self.options = [] if assigned_options.empty?
+    return self.default_options = [] if mode_list.empty?
 
-    self.options = []
-    assigned_options.each do |verbose, simple|
-      options << "--#{verbose}"
+    self.default_options = []
+    mode_list.each do |verbose, simple|
+      default_options << "--#{verbose}"
       if simple.is_a?(Array)
-        simple.each { |flag| options << (flag.start_with?('-') ? flag : "-#{flag}") }
+        simple.each { |flag| default_options << (flag.start_with?('-') ? flag : "-#{flag}") }
       else
-        options << (simple.start_with?('-') ? simple : "-#{simple}")
+        default_options << (simple.start_with?('-') ? simple : "-#{simple}")
       end
     end
 
-    raise FlagAssignmentError if options.any? { |flag| HELP_OPTIONS.include? flag }
+    raise FlagAssignmentError if default_options.any? { |flag| HELP_OPTIONS.include? flag }
 
-    self.options += HELP_OPTIONS
+    self.default_options += HELP_OPTIONS
   end
 
-  def receive_possible_flags
+  def receive_flags
     # Simple flags can be 1 to 3 letters long and can optionally end with a '+'
     # Verbose flags must start with a double hyphen followed by a letter.
     #   It can thereafter have any number of letters, underscores or numbers
@@ -32,8 +32,8 @@ module FlagHandler
     raise InputQuantityError.new('Flags', received[:flags], flag_limit)
   end
 
-  def accepted_flags
-    return if options.empty?
+  def accept_flags
+    return if default_options.empty?
 
     accepted[:flags] = received[:flags].dup
     accepted[:flags].slice!(flag_limit.max..-1)
@@ -43,9 +43,9 @@ module FlagHandler
     raise InputError, "Insufficient flags; Minimum required: #{flag_limit.min}"
   end
 
-  def validate_flags
+  def verify_mode
     accepted[:flags].each do |found_flag|
-      raise InvalidFlagError.new(**flag_error_packet(found_flag)) unless options.include? found_flag
+      raise InvalidFlagError.new(**flag_error_packet(found_flag)) unless default_options.include? found_flag
     end
   end
 
@@ -53,7 +53,7 @@ module FlagHandler
     {
       input: erroneous_flag,
       position: inputs.index(erroneous_flag),
-      acceptable: options
+      acceptable: default_options
     }
   end
 end

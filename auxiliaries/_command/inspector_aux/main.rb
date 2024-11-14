@@ -33,7 +33,7 @@ class Inspector
       'FLAGS:',
       "\tReceived: #{received[:flags]}",
       "\tAccepted: #{flags}",
-      "\tOptions: #{options}",
+      "\tOptions: #{default_options}",
       "\tLimit: #{flag_limit}"
     ]
   end
@@ -60,17 +60,17 @@ class Inspector
   end
 
   def check_keywords
-    fraction = assigned_keywords.keys.count { |expected_key| uses_keyword? expected_key }
-    fulfilled = case assigned_keywords.size - fraction
+    fraction = settings_list.keys.count { |expected_key| uses_keyword? expected_key }
+    fulfilled = case settings_list.size - fraction
                 when 0 then 'Yes'
-                when assigned_keywords.size then 'No'
+                when settings_list.size then 'No'
                 else 'Some'
                 end
 
     ['KEYWORDS:', "\tExpected: {",
-     assigned_keywords.map { |assignment, explanation| "\t  #{assignment} -> #{explanation}" }.join("\n"),
+     settings_list.map { |assignment, explanation| "\t  #{assignment} -> #{explanation}" }.join("\n"),
      "\t}",
-     "\tReceived: #{received[:keywords]}", "\tAccepted: #{keywords}",
-     "\tFulfilled: #{fulfilled} (#{fraction}/#{assigned_keywords.size})"]
+     "\tReceived: #{received[:default_settings]}", "\tAccepted: #{default_settings}",
+     "\tFulfilled: #{fulfilled} (#{fraction}/#{settings_list.size})"]
   end
 end

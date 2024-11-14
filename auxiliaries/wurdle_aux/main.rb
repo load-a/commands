@@ -14,10 +14,10 @@ class Wurdle < Command
   attr_accessor :word, :number_of_guesses, :wrong_letters, :found_letters, :revealed_letters
 
   def initialize(argv, flag_limit: (0..0), parameter_limit: (0..2), case_sensitive: false)
-    self.assigned_options = {
+    self.mode_list = {
       random: 'r'
     }
-    self.assigned_keywords = {
+    self.settings_list = {
       word: 'The word to solve',
       count: 'The number of characters required (not yet implemented)',
       guesses: 'The number of guesses allowed (not yet implemented)'
@@ -25,7 +25,7 @@ class Wurdle < Command
 
     super
 
-    self.word = keywords[:word]
+    self.word = default_settings[:word]
     self.number_of_guesses = parameters[1].to_i.clamp(1..9) if parameters.length > 1
 
     self.word = WORDS.sample if received_flags.any? { |flag| flag }

@@ -7,7 +7,7 @@ class Mint < Command
   include CommandGenerator
 
   def initialize(argv, flag_limit: (1..1), parameter_limit: (1..1), case_sensitive: true)
-    self.assigned_options = {
+    self.mode_list = {
       bash: 'b',
       c: 'c',
       command: 'c+',

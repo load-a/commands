@@ -1,7 +1,7 @@
 module ParameterHandler
   private
 
-  def receive_possible_parameters
+  def receive_parameters
     is_a_keyword = inputs.grep(/\w+:\w+/)
     received[:parameters] = (inputs.dup - (received[:flags] + is_a_keyword)) || []
 
