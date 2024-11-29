@@ -1,0 +1,77 @@
+.
+├── Gemfile
+├── Gemfile.lock
+├── bin
+│   ├── mint
+│   ├── vault
+│   └── wurdle
+├── lib
+│   └── core
+│       ├── command
+│       │   ├── deprecated
+│       │   │   ├── filer.rb
+│       │   │   └── prompter.rb
+│       │   ├── errors
+│       │   │   └── errors.rb
+│       │   ├── main.rb
+│       │   └── modules
+│       │       ├── _all.rb
+│       │       ├── mode_handler.rb
+│       │       ├── normalize.rb
+│       │       ├── parameter_handler.rb
+│       │       └── settings_handler.rb
+│       ├── commands
+│       │   ├── mint
+│       │   │   ├── help.md
+│       │   │   ├── main.rb
+│       │   │   ├── modules
+│       │   │   │   └── command_generator.rb
+│       │   │   └── templates
+│       │   │       ├── programming
+│       │   │       │   ├── command_bin.rb
+│       │   │       │   ├── command_main.rb
+│       │   │       │   ├── main_template.java
+│       │   │       │   ├── template.c
+│       │   │       │   ├── template.cpp
+│       │   │       │   ├── template.java
+│       │   │       │   ├── template.rb
+│       │   │       │   └── template.rs
+│       │   │       └── text
+│       │   │           ├── help_template.md
+│       │   │           └── template.txt
+│       │   ├── vault
+│       │   │   ├── help.md
+│       │   │   └── main.rb
+│       │   └── wurdle
+│       │       ├── constants.rb
+│       │       ├── help.md
+│       │       └── main.rb
+│       ├── deprecated
+│       │   ├── inspector
+│       │   │   ├── help.md
+│       │   │   └── main.rb
+│       │   ├── mint_template_constants.rb
+│       │   ├── outest
+│       │   ├── outest_help.md
+│       │   └── outest_main.rb
+│       └── extensions
+│           ├── _all.rb
+│           ├── numeric.rb
+│           ├── object.rb
+│           └── string.rb
+├── restructure.rb
+├── spec
+│   ├── core
+│   │   ├── command
+│   │   │   ├── main_spec.rb
+│   │   │   └── modules
+│   │   │       ├── normalize_spec.rb
+│   │   │       └── settings_handler_spec.rb
+│   │   └── extensions
+│   │       ├── numeric_spec.rb
+│   │       ├── object_spec.rb
+│   │       └── string_spec.rb
+│   └── spec_helper.rb
+└── structure.txt
+
+24 directories, 51 files
