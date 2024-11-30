@@ -1,0 +1,18 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require_relative '../lib/commands/forge/main'
+
+Forge.new(ARGV).run
+
+# PROCESS FOR NEW SCRIPTS
+# 1. Create bin file (from template) and 'permit' it rwx-rx-x
+# 2. Create lib folder
+#   a. main.rb (template)
+#   b. help.md (template)
+# 3. Generate the appropriate rspec files
+
+# Process for new files
+# 1. Create it, either in call directory or explicit directory (with correct extension)
+# 2. Replace "THIS" with filename in correct case, if applicable
+# 3. Open the file in an editor, if applicable

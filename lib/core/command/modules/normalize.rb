@@ -17,17 +17,16 @@ module Normalize
   end
 
   def from_array(array)
-    raise "Must pass in an Array" unless array.is_a?(Array)
-    if array.length == 1
-      array.first
-    elsif array.empty?
-      nil
-    else
-      array
+    if array.is_a?(Array)
+      return array.first if array.length == 1
+      return nil if array.empty?
     end
+
+    array
   end
 
   def from_string(string, numeric_default: 0)
+    return string unless string.is_a?(String)
     if string.numeric?
       string.to_numeric(numeric_default)
     elsif %w[true false].include?(string.downcase)
@@ -77,5 +76,27 @@ module Normalize
     end
 
     raise "PARSE ERROR #{index}/#{string.length}"
+  end
+
+  # Converts a string into the appropriate flag format.
+  # Defaults to :simple (:flag -> '-flag').
+  def to_flag(string, type: :simple)
+    if type == :simple
+      string.start_with?('-') ? string : "-#{string}"
+    elsif type == :verbose
+      string.start_with?('--') ? string : "--#{string}"
+    else
+      raise "Invalid type: #{type} \nType must be :simple or :verbose."
+    end
+  end
+
+  def from_flag(flag, symbol: false)
+    if flag.start_with?('-')
+      symbol ? flag[1..].to_sym : flag[1..]
+    elsif flag.start_with?('--')
+      symbol ? flag[2..].to_sym : flag[2..]
+    else
+      raise "Bad flag: #{flag} \nFlag must start with one or two dashes ('-')."
+    end
   end
 end

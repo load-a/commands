@@ -44,8 +44,8 @@ RSpec.describe Normalize do
       expect(Normalize.from_array([])).to be_nil
     end
 
-    it 'raises an error if it does not get an array' do
-      expect { Normalize.from_array(15) }.to raise_error(RuntimeError)
+    it 'returns what it received if it does not get an array' do
+      expect(Normalize.from_array(15)).to eq(15)
     end
   end
 
@@ -103,6 +103,10 @@ RSpec.describe Normalize do
 
       it 'cannot handle escaped quotes' do
         expect { Normalize.from_string('["\"abc\""]') }.to raise_error(TypeError)
+      end
+
+      it 'returns any invalid data types' do
+        expect(Normalize.from_string(13)).to eq(13)
       end
     end
   end

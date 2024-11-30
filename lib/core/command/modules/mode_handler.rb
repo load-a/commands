@@ -20,9 +20,11 @@ module ModeHandler
 
     default_options.each do |key, value|
       options << "--#{key}"
-      options << (value.start_with?('-') ? value : "-#{value}")
+      options << Normalize.to_flag(value)
     end
   end
+
+  alias update_modes initialize_modes
 
   def process_modes
     processed[:modes] = if convert_to_downcase?(:modes)
@@ -37,6 +39,15 @@ module ModeHandler
   end
 
   def modes
-    processed[:modes]
+    Normalize.from_array processed[:modes]
+  end
+
+  def check_mode(name_symbol)
+    return false unless options.include?(Normalize.to_flag(name_symbol.to_s))
+
+    processed[:modes].any? do |flag|
+      flag == Normalize.to_flag(name_symbol.to_s, type: :verbose) ||
+          Normalize.to_array(default_options[:name_symbol]).include?(flag)
+    end
   end
 end

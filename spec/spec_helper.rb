@@ -17,11 +17,21 @@
 require 'dir_req'
 
 # @note These are variables instead of constants to avoid conflict with the actual program code.
-core_directory = Dir.pwd + '/lib/core'
-deprecated_files = DirReq.collect_file_paths(core_directory + '/deprecated')
-command_parent = core_directory + '/command/main.rb'
+original_dir = Dir.pwd
 
-DirReq.require_directory core_directory, ignore: deprecated_files, load_first: command_parent
+Dir.chdir
+
+lib_dir = Dir.pwd + '/commands/lib'
+deprecated_dir = lib_dir + '/deprecated'
+template_dir = lib_dir + '/commands/forge/templates'
+command_parent = lib_dir + '/core/command/main.rb'
+
+# @todo It may be wise to just make a .spec_ignore file with these in it.
+ignore_dirs = DirReq.collect_file_paths(deprecated_dir) + DirReq.collect_file_paths(template_dir)
+
+Dir.chdir(original_dir)
+
+DirReq.require_directory lib_dir, ignore: ignore_dirs, load_first: command_parent
 
 RSpec.configure do |config|
   # rspec-expectations config goes here. You can use an alternate

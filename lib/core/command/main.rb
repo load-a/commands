@@ -56,7 +56,7 @@ class Command
 
     self.send_directory = execution_directory
 
-    initialize_settings
+    assign_default_settings
     initialize_modes
 
     # Valid data that meets various criteria and undergoes processing
@@ -81,9 +81,11 @@ class Command
   end
 
   def convert_to_downcase?(type)
-    return !default_settings[:case_sensitive] unless default_settings[:case_sensitive].is_a?(Array)
+    state = Normalize.from_array settings[:case_sensitive]
 
-    default_settings[:case_sensitive].none?(type)
+    return !state if [TrueClass, FalseClass].include?(state.class)
+
+    settings[:case_sensitive].none?(type)
   end
 
   def inspect
@@ -91,10 +93,14 @@ class Command
   end
 
   def help
-    system "cat #{COMMANDS_PATH}/#{self.class.to_s.downcase}/help.md"
+    # system "cat #{COMMANDS_PATH}/#{self.class.to_s.downcase}/help.md"
   end
 
   def run
+    # update these two
+    update_modes
+    update_settings
+
     process_modes
     process_settings
     process_parameters

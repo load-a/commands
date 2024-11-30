@@ -25,6 +25,12 @@ RSpec.describe Command do
         end
       end
     end
+
+    it 'can detect mode by simple or verbose flag' do
+      expect(Command.new(['-h']).check_mode(:help)).to be true
+      expect(Command.new(['--help']).check_mode(:help)).to be true
+      expect(Command.new(['--help']).check_mode(:inspect)).to be false
+    end
   end
 
   describe 'Settings' do
@@ -32,6 +38,22 @@ RSpec.describe Command do
       it 'extracts keywords from settings hash' do
         expect(Command.new.settings.keys).to match_array(Command.new.keywords)
       end
+    end
+  end
+
+  describe 'Parameters' do
+    it 'correctly changes case' do
+      command = Command.new(%w[-tag paraMETER])
+
+      command.default_settings[:case_sensitive] = :parameters
+      command.run
+      expect(command.settings[:case_sensitive]).to match_array([:parameters])
+      expect(command.parameters).to match('paraMETER')
+
+      command.default_settings[:case_sensitive] = false
+      command.run
+      expect(command.settings[:case_sensitive]).to match_array([false])
+      expect(command.parameters).to match('parameter')
     end
   end
 
@@ -69,7 +91,7 @@ RSpec.describe Command do
       it 'converts @valid inputs that match its own possible inputs into their respective data types' do
         expect(@command.processed).to be_a Hash
         expect(@command.processed[:modes]).to match_array(%w[--help -h --inspect -i])
-        expect(@command.processed[:settings]).to include(case_sensitive: false)
+        expect(@command.processed[:settings]).to include(:case_sensitive => [false])
         expect(@command.processed[:parameters]).to be_empty
       end
 
@@ -85,7 +107,7 @@ RSpec.describe Command do
   describe 'helper modes' do
     describe '#help' do
       it 'Calls the help screen' do
-        expect(Command.new.help).to_not be_nil
+        expect(Command.new.help).to be_nil
       end
     end
 
@@ -93,6 +115,19 @@ RSpec.describe Command do
       it 'Calls the inspect screen' do
         expect(Command.new.inspect).to be_nil
       end
+    end
+  end
+
+  describe '#convert_to_downcase' do
+    before do
+      @command = Command.new
+    end
+
+    it 'returns *false* if sensitivity is *true*' do
+      @command.default_settings[:case_sensitive] = true
+      @command.run
+
+      expect(@command.convert_to_downcase?(:parameters)).to be false
     end
   end
 
