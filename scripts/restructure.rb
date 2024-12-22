@@ -54,7 +54,7 @@ STRUCTURE_MAP = {
   'spec/auxiliaries/_command/class_extensions/object_spec.rb' => 'spec/core/extensions/object_spec.rb',
   'spec/auxiliaries/_command/modules/normalize_spec.rb' => 'spec/core/command/modules/normalize_spec.rb',
   'spec/auxiliaries/_command/modules/settings_handler_spec.rb' => 'spec/core/command/modules/settings_handler_spec.rb',
-  'spec/auxiliaries/_command/command_spec.rb' => 'spec/core/command/main_spec.rb',
+  'spec/auxiliaries/_command/command_spec.rb' => 'spec/core/command/main_spec.rb'
 }.freeze
 
 def restructure_project(structure_map)
@@ -74,6 +74,7 @@ end
 def clean_empty_folders(base_dir)
   Dir.glob("#{base_dir}/**/").reverse_each do |dir|
     next if dir == base_dir
+
     if Dir.empty?(dir)
       puts "Removing empty directory: #{dir}"
       Dir.rmdir(dir)

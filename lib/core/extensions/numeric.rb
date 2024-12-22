@@ -27,6 +27,7 @@ class ::Numeric
 
   def divisible_by?(divisor)
     raise ZeroDivisionError if divisor.zero?
+
     (self % divisor).zero?
   end
 end

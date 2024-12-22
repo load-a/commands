@@ -82,7 +82,9 @@ RSpec.describe Normalize do
       it 'recursively calls itself on each nested array' do
         expect(Normalize.from_string('[abc, 123]')).to match_array(['abc', 123])
         expect(Normalize.from_string('[1, [false]]')).to match_array([1, [false]])
-        expect(Normalize.from_string('[1, [false, [true, 2, b], :sym]]')).to match_array([1, [false, [true, 2, 'b'], :sym]])
+        expect(Normalize.from_string('[1, [false, [true, 2, b], :sym]]')).to match_array([1,
+                                                                                          [false, [true, 2, 'b'],
+                                                                                           :sym]])
       end
 
       it 'converts invalid arrays into strings' do

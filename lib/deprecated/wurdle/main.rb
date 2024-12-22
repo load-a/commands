@@ -15,12 +15,12 @@ class Wurdle < Command
 
   def initialize(argv, flag_limit: (0..0), parameter_limit: (0..2), case_sensitive: false)
     self.mode_list = {
-        random: 'r'
+      random: 'r'
     }
     self.settings_list = {
-        word: 'The word to solve',
-        count: 'The number of characters required (not yet implemented)',
-        guesses: 'The number of guesses allowed (not yet implemented)'
+      word: 'The word to solve',
+      count: 'The number of characters required (not yet implemented)',
+      guesses: 'The number of guesses allowed (not yet implemented)'
     }
 
     super
@@ -70,10 +70,10 @@ class Wurdle < Command
 
   def status(guess)
     [
-        "\n#{check_letters(guess)}\n\n",
-        "```\n#{revealed_letters.join(' ')}\n",
-        "Found letters: #{found_letters}\n",
-        "#{keyboard(wrong_letters)}\n```"
+      "\n#{check_letters(guess)}\n\n",
+      "```\n#{revealed_letters.join(' ')}\n",
+      "Found letters: #{found_letters}\n",
+      "#{keyboard(wrong_letters)}\n```"
     ]
   end
 

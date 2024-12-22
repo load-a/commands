@@ -2,29 +2,29 @@ RSpec.describe String do
   describe '#numeric?' do
     context 'when the entire string is a decimal, binary, octal or hexadecimal value' do
       it 'can interpret decimal integers' do
-        expect("123".numeric?).to eq(true)
+        expect('123'.numeric?).to eq(true)
       end
 
       it 'can interpret negative numbers' do
-        expect("-123".numeric?).to eq(true)
-        expect("-0b1001".numeric?).to eq(true)
-        expect("-0xace1".numeric?).to eq(true)
+        expect('-123'.numeric?).to eq(true)
+        expect('-0b1001'.numeric?).to eq(true)
+        expect('-0xace1'.numeric?).to eq(true)
       end
 
       it 'can interpret floating point decimal numbers' do
-        expect("0.123".numeric?).to be(true)
+        expect('0.123'.numeric?).to be(true)
       end
 
       it 'can interpret binary (0b) integers' do
-        expect("0b011010".numeric?).to be(true)
+        expect('0b011010'.numeric?).to be(true)
       end
 
       it 'can interpret octal integers' do
-        expect("0176".numeric?).to be(true)
+        expect('0176'.numeric?).to be(true)
       end
 
       it 'can interpret hexadecimal integers' do
-        expect("0xffa3".numeric?).to be(true)
+        expect('0xffa3'.numeric?).to be(true)
       end
     end
 
@@ -75,7 +75,7 @@ RSpec.describe String do
     it 'converts large and small numbers, and scientific notation correctly' do
       expect('1e100'.to_numeric).to eq(1e100)
       expect('1e-100'.to_numeric).to eq(1e-100)
-      expect('9999999999999999999999'.to_numeric).to eq(9999999999999999999999)
+      expect('9999999999999999999999'.to_numeric).to eq(9_999_999_999_999_999_999_999)
     end
 
     it 'handles case insensitivity' do
@@ -88,11 +88,11 @@ RSpec.describe String do
       end
 
       it 'converts octal into Octal Integers' do
-        expect('0o176'.to_numeric).to eq(0176)
+        expect('0o176'.to_numeric).to eq(0o176)
       end
 
       it 'recognizes a difference between octal numbers and decimal integers with leading zeros' do
-        expect('0176'.to_numeric).to eq(0176)
+        expect('0176'.to_numeric).to eq(0o176)
         expect('0189'.to_numeric).to eq(189)
       end
 

@@ -27,6 +27,7 @@ module Normalize
 
   def from_string(string, numeric_default: 0)
     return string unless string.is_a?(String)
+
     if string.numeric?
       string.to_numeric(numeric_default)
     elsif %w[true false].include?(string.downcase)
@@ -36,6 +37,7 @@ module Normalize
     elsif string.start_with?('[') && string.end_with?(']')
       array = parse_array_string(string)
       raise "CONVERSION ERROR: #{array[1]}/#{string.length}" if array[1] + 1 != string.length
+
       array[0]
     else
       string
@@ -79,14 +81,16 @@ module Normalize
   end
 
   # Converts a string into the appropriate flag format.
-  # Defaults to :simple (:flag -> '-flag').
-  def to_flag(string, type: :simple)
-    if type == :simple
-      string.start_with?('-') ? string : "-#{string}"
-    elsif type == :verbose
-      string.start_with?('--') ? string : "--#{string}"
+  # Defaults to :short # => :flag -> '-flag'
+  def to_flag(string, type: :short)
+    return string if string.start_with?('-') || string.start_with?('--')
+
+    if type == :short
+      "-#{string}"
+    elsif type == :long
+      "--#{string}"
     else
-      raise "Invalid type: #{type} \nType must be :simple or :verbose."
+      raise "Invalid type: #{type} \nType must be :long or :short."
     end
   end
 

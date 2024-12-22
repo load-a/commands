@@ -2,12 +2,12 @@
 
 module SettingsHandler
   BASE_SETTINGS = {
-      case_sensitive: Normalize.to_array(true),
-      parameter_limit: (0..1),
-      mode_limit: (0..1),
-      execution_directory: nil, # Where the events of the program think they are
-      send_directory: nil, # Where (if anywhere) the values of the program should be sent,
-      empty_return: nil # What you want to be returned in case of an empty result (experimental),
+    case_sensitive: Normalize.to_array(true),
+    parameter_limit: (0..1),
+    mode_limit: (0..1),
+    execution_directory: nil, # Where the events of the program think they are
+    send_directory: nil, # Where (if anywhere) the values of the program should be sent,
+    empty_return: nil # What you want to be returned in case of an empty result (experimental),
   }.freeze
 
   def assign_default_settings
@@ -19,14 +19,14 @@ module SettingsHandler
 
   def update_settings
     # Case Sensitivity
-    unless settings[:case_sensitive].is_a?(Array)
-      if processed[:settings].include?(:case_sensitive)
-        processed[:settings][:case_sensitive] = Normalize.from_string(processed[:settings][:case_sensitive])
-        processed[:settings][:case_sensitive] = Normalize.to_array(processed[:settings][:case_sensitive])
-      else
-        default_settings[:case_sensitive] = Normalize.from_string(default_settings[:case_sensitive])
-        default_settings[:case_sensitive] = Normalize.to_array(default_settings[:case_sensitive])
-      end
+    return if settings[:case_sensitive].is_a?(Array)
+
+    if processed[:settings].include?(:case_sensitive)
+      processed[:settings][:case_sensitive] = Normalize.from_string(processed[:settings][:case_sensitive])
+      processed[:settings][:case_sensitive] = Normalize.to_array(processed[:settings][:case_sensitive])
+    else
+      default_settings[:case_sensitive] = Normalize.from_string(default_settings[:case_sensitive])
+      default_settings[:case_sensitive] = Normalize.to_array(default_settings[:case_sensitive])
     end
   end
 

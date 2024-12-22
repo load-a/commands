@@ -8,18 +8,18 @@ class Mint < Command
 
   def initialize(argv, flag_limit: (1..1), parameter_limit: (1..1), case_sensitive: true)
     self.mode_list = {
-        bash: 'b',
-        c: 'c',
-        command: 'c+',
-        c_plus_plus: 'cpp',
-        java: %w[j j+],
-        lua: 'l',
-        ruby: 'r',
-        rust: 'rs',
-        script: %w[s+ scr],
-        text: 't',
-        zsh: 'z',
-        remove: '-rm'
+      bash: 'b',
+      c: 'c',
+      command: 'c+',
+      c_plus_plus: 'cpp',
+      java: %w[j j+],
+      lua: 'l',
+      ruby: 'r',
+      rust: 'rs',
+      script: %w[s+ scr],
+      text: 't',
+      zsh: 'z',
+      remove: '-rm'
     }
 
     super
@@ -74,16 +74,16 @@ class Mint < Command
 
   def generate_path_and_contents(file_path)
     file_creation_lookup = {
-        bash: ['.sh', '#!/usr/bin/env bash'],
-        c: ['.c', File.read('templates/c_template.c')],
-        cpp: ['.cpp', File.read('templates/cpp_template.cpp')],
-        java: ['.java', File.read('templates/java_main_template.java').gsub('THIS', parameters.capitalize)],
-        java_plus: ['.java', File.read('templates/java_template.java').gsub('THIS', parameters.capitalize)],
-        # lua: ['.lua', File.read('templates/lua_template.lua')],
-        ruby: ['.rb', File.read('templates/ruby_template.rb')],
-        rust: ['.rs', File.read('templates/rust_template.rs')],
-        text: ['.txt', String.new],
-        zsh: ['.sh', '#!/usr/bin/env zsh']
+      bash: ['.sh', '#!/usr/bin/env bash'],
+      c: ['.c', File.read('templates/c_template.c')],
+      cpp: ['.cpp', File.read('templates/cpp_template.cpp')],
+      java: ['.java', File.read('templates/java_main_template.java').gsub('THIS', parameters.capitalize)],
+      java_plus: ['.java', File.read('templates/java_template.java').gsub('THIS', parameters.capitalize)],
+      # lua: ['.lua', File.read('templates/lua_template.lua')],
+      ruby: ['.rb', File.read('templates/ruby_template.rb')],
+      rust: ['.rs', File.read('templates/rust_template.rs')],
+      text: ['.txt', String.new],
+      zsh: ['.sh', '#!/usr/bin/env zsh']
     }.freeze
 
     key = case flags
@@ -112,8 +112,8 @@ class Mint < Command
           end
 
     {
-        path: file_path + file_creation_lookup[key][0],
-        content: file_creation_lookup[key][1]
+      path: file_path + file_creation_lookup[key][0],
+      content: file_creation_lookup[key][1]
     }
   end
 end

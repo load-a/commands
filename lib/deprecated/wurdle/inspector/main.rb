@@ -30,32 +30,32 @@ class Inspector
 
   def check_flags
     [
-        'FLAGS:',
-        "\tReceived: #{received[:flags]}",
-        "\tAccepted: #{flags}",
-        "\tOptions: #{default_options}",
-        "\tLimit: #{flag_limit}"
+      'FLAGS:',
+      "\tReceived: #{received[:flags]}",
+      "\tAccepted: #{flags}",
+      "\tOptions: #{default_options}",
+      "\tLimit: #{flag_limit}"
     ]
   end
 
   def check_args
     [
-        'PARAMETERS:',
-        "\tReceived: #{received[:parameters]}",
-        "\tAccepted: #{parameters}",
-        "\tNumber of Arguments?: #{parameters.is_a?(String) ? 1 : parameters.size}",
-        "\tLimit: #{parameter_limit}"
+      'PARAMETERS:',
+      "\tReceived: #{received[:parameters]}",
+      "\tAccepted: #{parameters}",
+      "\tNumber of Arguments?: #{parameters.is_a?(String) ? 1 : parameters.size}",
+      "\tLimit: #{parameter_limit}"
     ]
   end
 
   def check_paths
     [
-        'PATHS:',
-        "\tCall: #{CALL_PATH}",
-        "\tHome: #{HOME_PATH}",
-        "\tMain: #{COMMANDS_PATH}",
-        "\tAux.: #{AUXILIARIES_PATH}",
-        "\tExec: #{execution_path}"
+      'PATHS:',
+      "\tCall: #{CALL_PATH}",
+      "\tHome: #{HOME_PATH}",
+      "\tMain: #{COMMANDS_PATH}",
+      "\tAux.: #{AUXILIARIES_PATH}",
+      "\tExec: #{execution_path}"
     ]
   end
 

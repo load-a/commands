@@ -2,107 +2,254 @@
 
 require 'dir_req'
 
-# Record from where the command was called.
-CALL_PATH = Dir.pwd
-
-# Move to home directory.
-Dir.chdir
-
-# Record user's home directory.
-HOME_PATH = Dir.pwd
-
-# Create other Path Constants.
-require_relative 'paths'
-
 # Require needed directories (like normal)
-DirReq.require_directory CORE_DIRECTORY,
-                         ignore: DirReq.collect_file_paths(DEPRECATED_PATH),
-                         load_first: COMMAND_MAIN
-
-# Go back to where the command was called. [This is important for development.]
-Dir.chdir CALL_PATH
+DirReq.require_directory '/Users/saramir/commands/lib/core/command/modules'
+DirReq.require_directory '/Users/saramir/commands/lib/core/command/errors'
+DirReq.require_directory '/Users/saramir/commands/lib/core/extensions'
 
 class Command
   include ModeHandler
-  include ParameterHandler
-  include SettingsHandler
-
+  # MODE PATTERN (letters can be upper- or lowercase)
+  # short flags: one dash; one to three letters; an optional plus sign
+  # long flags: two dashes; any letter; one or more letters, numbers or underscores
   MODE_PATTERN = /(^-[A-Za-z]{1,3}\+?$)|(^--[A-Za-z][A-Za-z0-9_]+$)/.freeze
-  SETTING_PATTERN = /\w+:\w+/.freeze
+  # CONFIG_PATTERN
+  # One or more word characters; a colon; one or more word characters
+  CONFIG_PATTERN = %r{\w+:[\w/.-]+}.freeze
 
-  attr_accessor :raw, :valid, :processed,
-                # :modes, :settings, :parameters,
-                :default_options, :default_settings, # user modes and settings respectively
-                :execution_directory, :send_directory
+  # This needs to override everything else.
+  MANDATORY_SETTINGS = {
+    wait: nil,
+    case_sensitivity: [:parameters],
+    default_mode: :inspect,
+    mode_limit: (0..1),
+    parameter_limit: (1..9),
+    execution_directory: nil,
+    send_directory: nil,
+    adjustments: {}
+  }.freeze
+
+  # Should probably not be a constant
+  MANDATORY_ADJUSTMENTS = {
+    configure: {},
+    bypass: {},
+    help: {},
+    inspect: {},
+    reset: {}
+  }.freeze
+
+  attr_accessor :raw, :tokens, :state,
+                :options, :configurations, :adjustments,
+                :default_options, :default_settings, :default_adjustments,
+                :mode
 
   def initialize(argv = [])
-    # Assign SETTINGS and MODES up top
+    set_default_attributes
 
-    # Just the raw input from ARGV
-    self.raw = argv.dup # make it so new inputs get added to this?
-
-    # All valid pattern matches in raw input
-    self.valid = {
-        modes: raw.grep(MODE_PATTERN),
-        settings: raw.grep(SETTING_PATTERN),
-        parameters: raw.reject { |word| word =~ MODE_PATTERN || word =~ SETTING_PATTERN }
-    }
-
-    self.execution_directory = if self.class == Command
-                                 COMMAND_DIRECTORY
-                               else
-                                 "#{COMMANDS_PATH}/#{self.class.to_s.downcase}"
-                               end
-
-    self.send_directory = execution_directory
-
-    assign_default_settings
-    initialize_modes
-
-    # Valid data that meets various criteria and undergoes processing
-    self.processed = {
-        modes: [],
-        settings: {},
-        parameters: []
-    }
-
-    # UPDATE - act on user input here (redefine settings, select mode, etc.)
+    update_from_input argv
   end
 
-  # @note THIS MUST ONLY BE USED WHEN NEEDED. OTHERWISE STAY IN THE CALL PATH
-  def change_directories
-    unless processed[:settings][:execution_directory].nil?
-      self.execution_directory = processed[:settings][:execution_directory]
+  def set_default_attributes
+    check_for_duplicate_options
+
+    generate_options
+
+    generate_configurations
+    reset_state
+  end
+
+  def reset_state
+    self.state = {
+      modes: [],
+      configurations: configurations,
+      parameters: []
+    }
+  end
+
+  def check_for_duplicate_options
+    return if options.nil?
+
+    all_flags = []
+
+    options.each_value do |flags|
+      flags.each do |flag|
+        all_flags << Normalize.to_flag(flag)
+      end
+    end
+  end
+
+  def generate_options
+    self.options = MANDATORY_OPTIONS.dup if options.nil?
+
+    options.each do |mode, flag|
+      flags = Normalize.to_array flag
+      flags.map! { |flag| Normalize.to_flag flag }
+      flags << Normalize.to_flag(mode.to_s, type: :long)
+      options[mode] = flags
+    end
+  end
+
+  def flags
+    options.values.flatten
+  end
+
+  def generate_configurations
+    self.configurations = MANDATORY_SETTINGS.dup if configurations.nil?
+
+    generate_adjustments
+
+    self.configurations = MANDATORY_SETTINGS.dup.merge configurations
+
+    configurations[:adjustments] = adjustments
+  end
+
+  def generate_adjustments
+    self.adjustments = MANDATORY_ADJUSTMENTS.dup if adjustments.nil?
+
+    adjustments.merge! MANDATORY_ADJUSTMENTS.dup
+  end
+
+  def update_from_input(input)
+    self.raw = input
+    normalize_raw_input
+    sort_raw_input
+    check_input_limits
+    cull_tokens
+    verify
+    transform
+    update
+
+    enforce_defaults
+  end
+
+  def enforce_defaults; end
+
+  def normalize_raw_input
+    Normalize.to_array raw
+    raw.map! { |element| element.to_s }
+  end
+
+  def sort_raw_input
+    case_sensitivity = self[:case_sensitivity]
+
+    reset_token_stream
+
+    raw.each do |element|
+      element = element.downcase if case_sensitivity == false
+
+      if MODE_PATTERN =~ element
+        element = element.downcase unless case_sensitivity == true || case_sensitivity.include?(:modes)
+        tokens[:modes] << element
+      elsif CONFIG_PATTERN =~ element
+        element = element.downcase unless case_sensitivity == true || case_sensitivity.include?(:configurations)
+        tokens[:configurations] << element
+      else
+        element = element.downcase unless case_sensitivity == true || case_sensitivity.include?(:parameters)
+        tokens[:parameters] << element
+      end
+    end
+  end
+
+  def reset_token_stream
+    self.tokens = {
+      modes: [],
+      configurations: [],
+      parameters: []
+    }
+  end
+
+  def check_input_limits
+    raise 'NOT ENOUGH MODES' if configurations[:mode_limit].min > tokens[:modes].length
+  end
+
+  def cull_tokens
+    cull_modes
+    cull_configurations
+    cull_parameters
+  end
+
+  def cull_modes
+    tokens[:modes].uniq! # This wont cull variations of the same mode (i.e. '--default' and '-def')
+    tokens[:modes].slice!(configurations[:mode_limit].max..-1)
+  end
+
+  def cull_configurations; end
+
+  def cull_parameters
+    tokens[:parameters].slice!(configurations[:parameter_limit].max..-1)
+  end
+
+  def verify
+    tokens[:modes].each do |token|
+      raise "INVALID FLAG: #{token}\nOPTIONS: #{options}" unless flags.include? token
     end
 
-    self.send_directory = processed[:settings][:send_directory] unless processed[:settings][:send_directory].nil?
+    tokens[:configurations].each do |token|
+      puts "invalid config: #{token}" unless valid_config_string? token
+    end
 
-    Dir.chdir execution_directory
+    tokens[:configurations].reject! { |token| !valid_config_string?(token) }
   end
 
-  def convert_to_downcase?(type)
-    state = Normalize.from_array settings[:case_sensitive]
-
-    return !state if [TrueClass, FalseClass].include?(state.class)
-
-    settings[:case_sensitive].none?(type)
+  def valid_config_string?(config)
+    configurations.keys.include? config.split(':')[0].to_sym
   end
 
-  def inspect
-    # show Inspection screen
+  def transform
+    tokens[:modes].map! do |token|
+      options.each { |mode, flags| break mode if flags.include? token }
+    end
+
+    tokens[:modes].uniq!
+
+    config_hash = {}
+
+    tokens[:configurations].each do |token|
+      name, value = token.split(':', 2)
+      config_hash[name.to_sym] = Normalize.from_string(value)
+    end
+
+    tokens[:configurations] = config_hash
+  end
+
+  def update
+    reset_state
+
+    state[:modes] += tokens[:modes]
+    state[:configurations].merge! tokens[:configurations]
+    state[:parameters] += tokens[:parameters]
+
+    state[:modes] = Normalize.to_array(self[:default_mode].to_sym) if state[:modes].empty?
+
+    self.mode = state[:modes].first
+  end
+
+  def parameters
+    state[:parameters]
+  end
+
+  def [](symbol)
+    state[:configurations][symbol]
+  end
+
+  def configure
+    puts 'CONFIGURATION MODE:', configurations # Change config file
   end
 
   def help
-    # system "cat #{COMMANDS_PATH}/#{self.class.to_s.downcase}/help.md"
+    puts 'HELP MODE:', options # system "cat #{COMMANDS_PATH}/#{self.class.to_s.downcase}/help.md"
+  end
+
+  def inspect
+    puts 'INSPECTION MODE:', "RAW: #{raw}", "TOKENS: #{tokens}", "STATE: #{state}"
+  end
+
+  def reset
+    puts 'RESET MODE:'
+    # Reset config file
   end
 
   def run
-    # update these two
-    update_modes
-    update_settings
-
-    process_modes
-    process_settings
-    process_parameters
+    send(mode) if MANDATORY_OPTIONS.keys.include?(mode) && mode != :bypass
   end
 end
