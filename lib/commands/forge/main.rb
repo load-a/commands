@@ -8,15 +8,27 @@ class Forge < Command
   def initialize(argv = [])
     self.options = {
       make: %w[m mk],
-      remove: %w[r rm]
+      remove: %w[r rm],
+      copy: %w[c cp],
     }
 
-    self.configurations = {
+    self.settings = {
+      default_mode: :make,
       send_directory: Dir.pwd,
-      case_sensitivity: %i[configurations parameters],
+      case_sensitivity: %i[settings parameters],
       type: :empty,
       subtype: :empty,
-      parameter_limit: (1..1)
+      parameter_limit: (1..9)
+    }
+
+    self.adjustments = {
+      make: {
+        overwrite: false
+      },
+      copy: {
+        overwrite: false
+      },
+      remove: {},
     }
 
     @extension = ''
@@ -25,27 +37,33 @@ class Forge < Command
     super
   end
 
-  def enforce_defaults
+  def enforce_default_settings
     default_configs = {
       execution_directory: Dir.home + '/commands/lib/commands/forge',
-      case_sensitivity: %i[configurations parameters],
-      type: state[:configurations][:type].to_sym,
-      subtype: state[:configurations][:subtype].to_sym
+      case_sensitivity: %i[settings parameters],
+      type: state[:settings][:type].to_sym,
+      subtype: state[:settings][:subtype].to_sym
     }
 
     default_configs.each do |key, value|
-      state[:configurations][key] = value
+      state[:settings][key] = value
     end
   end
 
-  def generate_file(file_name = "#{self[:send_directory]}/#{parameters.first}")
+  def make_file(file_title = parameters.first)
+    file_name = "#{self[:send_directory]}/#{file_title}"
+
     file_name = check_for_template(file_name)
+
+    return puts "Cannot overwrite file: #{file_name}" if File.exist?(file_name) && self[:overwrite] == false
 
     puts "Creating file: #{file_name}"
     IO.write file_name, @contents
   end
 
-  def remove_file(file_name = "#{self[:send_directory]}/#{parameters.first}")
+  def remove_file(file_title = parameters.first)
+    file_name = "#{self[:send_directory]}/#{file_title}"
+
     file_name = check_for_template(file_name)
 
     return puts "Cannot Remove: #{file_name} -- Does not exist." unless File.exist? file_name
@@ -105,9 +123,11 @@ class Forge < Command
 
     case mode
     when :make
-      generate_file
+      each_parameter(:make_file)
     when :remove
-      remove_file
+      each_parameter do |file|
+        remove_file(file)
+      end
     end
   end
 end

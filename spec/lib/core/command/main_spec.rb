@@ -37,7 +37,7 @@ RSpec.describe Command do
     it 'changes functionality based on the current mode' do
       @command.update_from_input(['--help'])
 
-      expect(@command.run).to be_nil
+      expect(@command.run).to_not be_nil
     end
   end
 

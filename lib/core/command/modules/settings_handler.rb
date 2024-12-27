@@ -1,50 +1,51 @@
 # frozen_string_literal: true
 
 module SettingsHandler
-  BASE_SETTINGS = {
-    case_sensitive: Normalize.to_array(true),
-    parameter_limit: (0..1),
+  # SETTING_PATTERN
+  # One or more word characters; a colon; one or more word characters
+  SETTING_PATTERN = %r{\w+:[\w/.-]+}.freeze
+
+  # This needs to override everything else.
+  MANDATORY_SETTINGS = {
+    wait: nil,
+    case_sensitivity: [:parameters],
+    default_mode: :inspect,
     mode_limit: (0..1),
-    execution_directory: nil, # Where the events of the program think they are
-    send_directory: nil, # Where (if anywhere) the values of the program should be sent,
-    empty_return: nil # What you want to be returned in case of an empty result (experimental),
+    parameter_limit: (1..9),
+    execution_directory: nil,
+    send_directory: nil,
   }.freeze
 
-  def assign_default_settings
-    self.default_settings ||= BASE_SETTINGS.dup
-    default_settings[:execution_directory] ||= execution_directory
-    default_settings[:send_directory] ||= send_directory
-    self.default_settings = BASE_SETTINGS.dup.merge(default_settings.compact)
+  def generate_settings
+    self.settings = MANDATORY_SETTINGS.dup if settings.nil?
+
+    self.settings = MANDATORY_SETTINGS.dup.merge settings
   end
 
-  def update_settings
-    # Case Sensitivity
-    return if settings[:case_sensitive].is_a?(Array)
+  def matches_setting?(string)
+    SETTING_PATTERN =~ string
+  end
 
-    if processed[:settings].include?(:case_sensitive)
-      processed[:settings][:case_sensitive] = Normalize.from_string(processed[:settings][:case_sensitive])
-      processed[:settings][:case_sensitive] = Normalize.to_array(processed[:settings][:case_sensitive])
-    else
-      default_settings[:case_sensitive] = Normalize.from_string(default_settings[:case_sensitive])
-      default_settings[:case_sensitive] = Normalize.to_array(default_settings[:case_sensitive])
+  def verify_settings_tokens
+    tokens[:settings].each do |token|
+      puts "invalid config: #{token}" unless valid_setting_string? token
     end
   end
 
-  def keywords
-    settings.keys
+  def valid_setting_string?(config)
+    settings.keys.include?(config.split(':')[0].to_sym)
   end
 
-  def process_settings
-    valid[:settings].each do |key_pair|
-      key_pair = key_pair.downcase if convert_to_downcase?(:settings)
-      key, value = key_pair.split(':', 2)
-      processed[:settings][key.to_sym] = Normalize.from_string(value) if keywords.include? key.to_sym
+  def cull_settings; end
+
+  def transform_settings
+    setting_hash = {}
+
+    tokens[:settings].each do |token|
+      name, value = token.split(':', 2)
+      setting_hash[name.to_sym] = Normalize.from_string(value)
     end
 
-    update_settings
-  end
-
-  def settings
-    default_settings.merge processed[:settings]
+    tokens[:settings] = setting_hash
   end
 end

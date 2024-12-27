@@ -6,11 +6,15 @@ RSpec.describe Forge do
   end
 
   it 'has Make and Remove modes' do
-    expect(Forge.new.options.keys).to match_array %i[make remove]
+    expect(Forge.new.options.keys).to include *%i[make remove]
   end
 
   it 'is case sensitive for settings and parameters' do
-    expect(Forge.new[:case_sensitivity]).to match_array %i[parameters configurations]
+    expect(Forge.new[:case_sensitivity]).to match_array %i[parameters settings]
+  end
+
+  it 'recognizes adjustments' do 
+    expect(Forge.new(['-m']).state[:settings][:overwrite]).to be false
   end
 
   describe 'File Orientation:' do
