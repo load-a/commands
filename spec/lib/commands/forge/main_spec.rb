@@ -46,7 +46,7 @@ RSpec.describe Forge do
     end
 
     it 'crates files' do
-      @forge.generate_file
+      @forge.make_file
       expect(File).to exist(@file_path)
     end
 

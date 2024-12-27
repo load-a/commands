@@ -64,7 +64,6 @@ module InputHandler
   end
 
   def cull_tokens
-    cull_modes
     cull_settings
     cull_parameters
   end
@@ -78,9 +77,18 @@ module InputHandler
   def update
     raise "Mode is nil" if mode.nil?
 
-    state[:settings].merge! adjustments[mode]
+    merge_settings
+
     state[:settings].merge! tokens[:settings]
 
-    state[:parameters] += tokens[:parameters]
+    state[:parameters] = tokens[:parameters]
+  end
+
+  def merge_settings
+    if state[:settings][:active_mode]
+      state[:settings].merge! adjustments[state[:settings][:active_mode]]
+    else
+      state[:settings].merge! adjustments[mode]
+    end
   end
 end

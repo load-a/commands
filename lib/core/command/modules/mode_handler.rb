@@ -36,7 +36,7 @@ module ModeHandler
   end
 
   def cull_modes
-    tokens[:modes].uniq! # This wont cull variations of the same mode (i.e. '--default' and '-def')
+    # tokens[:modes].uniq! # This wont cull variations of the same mode (i.e. '--default' and '-def')
     tokens[:modes].slice!(settings[:mode_limit].max..-1)
   end
 
@@ -70,5 +70,13 @@ module ModeHandler
     else
       state[:modes] = tokens[:modes]
     end
+
+    partition_modes
+  end
+
+  def partition_modes
+    core_modes, input_modes = state[:modes].partition { |mode| MANDATORY_OPTIONS.keys.include? mode }
+    state[:settings][:core_modes] = core_modes
+    state[:settings][:input_modes] = input_modes
   end
 end

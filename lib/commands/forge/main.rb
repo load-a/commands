@@ -26,9 +26,15 @@ class Forge < Command
         overwrite: false
       },
       copy: {
-        overwrite: false
+        original: nil,
+        copies: [],
+        overwrite: false,
+        parameter_limit: (2..9),
+        generate: true
       },
-      remove: {},
+      remove: {
+        check: 2
+      },
     }
 
     @extension = ''
@@ -51,9 +57,7 @@ class Forge < Command
   end
 
   def make_file(file_title = parameters.first)
-    file_name = "#{self[:send_directory]}/#{file_title}"
-
-    file_name = check_for_template(file_name)
+    file_name = check_for_template("#{self[:send_directory]}/#{file_title}")
 
     return puts "Cannot overwrite file: #{file_name}" if File.exist?(file_name) && self[:overwrite] == false
 
@@ -62,9 +66,7 @@ class Forge < Command
   end
 
   def remove_file(file_title = parameters.first)
-    file_name = "#{self[:send_directory]}/#{file_title}"
-
-    file_name = check_for_template(file_name)
+    file_name = check_for_template("#{self[:send_directory]}/#{file_title}")
 
     return puts "Cannot Remove: #{file_name} -- Does not exist." unless File.exist? file_name
 
@@ -116,17 +118,50 @@ class Forge < Command
     @contents.gsub!('THIS', parameters.first.capitalize)
   end
 
+  def copy_file(original, copy)
+    original = "#{self[:send_directory]}/#{original}"
+    copy = "#{self[:send_directory]}/#{copy}"
+
+    return puts "Cannot copy #{original} -- File does not exist" unless File.exist?(original)
+    return puts "Cannot generate #{copy} -- File does not exist or Setting is false" unless File.exist?(copy) || self[:generate]
+    return puts "Cannot overwrite #{copy} -- Setting is false" if File.exist?(copy) && self[:overwrite] == false
+
+    system "cp #{original} #{copy}"
+    puts "Copying #{original} -> #{copy}"
+  end
+
   def run
-    super
+    each_mode do |mode|
+      super
 
-    raise 'Cannot have empty file name' if parameters.first.nil? # @todo Put this into an actual parameter error check
+      raise 'Cannot have empty file name' if parameters.first.nil? # @todo Put this into an actual parameter error check
 
-    case mode
-    when :make
-      each_parameter(:make_file)
-    when :remove
-      each_parameter do |file|
-        remove_file(file)
+      case mode
+      when :make
+        each_parameter(:make_file)
+      when :remove
+        files_to_remove = parameters.length
+
+        if files_to_remove >= self[:check] 
+          confirm_prompt = [
+            "Are you sure you want to remove #{files_to_remove} files?",
+            parameters.join("\n")
+          ]
+          return unless confirm?(confirm_prompt.join("\n"))
+        end
+
+        each_parameter do |file|
+          remove_file(file)
+        end
+      when :copy
+        check_for_parameters(2)
+
+        self[:original] = parameters.first
+        self[:copies] = parameters[1..]
+        
+        self[:copies].each do |copy|
+          copy_file(self[:original], copy)
+        end
       end
     end
   end

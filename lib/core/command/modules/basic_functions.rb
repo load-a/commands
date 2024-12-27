@@ -12,10 +12,12 @@ module BasicFunctions
   end
 
   def inspect
-    indentation = 2
-    puts 'INSPECTION MODE:', "RAW: #{raw}", "TOKENS:"
+    indentation = 4
+    puts 'INSPECTION MODE:'
+
+    puts "  RAW: #{raw}", "  TOKENS:"
     display_hash tokens, indentation
-    puts 'STATE:'
+    puts '  STATE:'
     display_hash state, indentation
   end
 
@@ -28,13 +30,15 @@ module BasicFunctions
     max_key_length = hash.keys.map(&:to_s).map(&:length).max
 
     hash.each do |key, value|
+      key = key.to_s.ljust(max_key_length)
+      indent = ' ' * indentation
+
       if value.is_a? Hash
-        puts "#{' ' * indentation}#{key}: {#{value.empty? ? '' : '...'}}"
+        puts "#{indent}#{key}: {#{value.empty? ? '' : '...'}}"
         display_hash value, indentation + 2
       else
         value = '<NIL>' if value.nil?
-        puts "#{(' ' * indentation)}#{key.to_s.ljust(max_key_length)}: #{value}"
-        # puts format('%s%s: %s', (' ' * indentation), key, value)
+        puts "#{(indent)}#{key}: #{value}"
       end
     end
   end

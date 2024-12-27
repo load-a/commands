@@ -7,13 +7,15 @@ module SettingsHandler
 
   # This needs to override everything else.
   MANDATORY_SETTINGS = {
-    wait: nil,
     case_sensitivity: [:parameters],
     default_mode: :inspect,
     mode_limit: (0..1),
     parameter_limit: (1..9),
     execution_directory: nil,
     send_directory: nil,
+    core_modes: [],
+    input_modes: [],
+    active_mode: nil,
   }.freeze
 
   def generate_settings
@@ -33,7 +35,21 @@ module SettingsHandler
   end
 
   def valid_setting_string?(config)
-    settings.keys.include?(config.split(':')[0].to_sym)
+    key = config.split(':')[0].to_sym
+
+    settings.keys.include?(key) || all_adjustment_keys.include?(key)
+  end
+
+  def all_adjustment_keys
+    keys = []
+    
+    adjustments.each do |key, value|
+      value.each do |k, v|
+        keys << k
+      end
+    end
+
+    keys
   end
 
   def cull_settings; end
