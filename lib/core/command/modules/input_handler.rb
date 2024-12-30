@@ -13,13 +13,13 @@ module InputHandler
     verify
     transform_settings
     update
-    enforce_default_settings
+    enforce_directives
   end
 
   def preprocess_inputs
     normalize_raw_input
     sort_raw_input
-    check_input_limits
+    check_for_mode_tokens
     cull_tokens
   end
 
@@ -59,8 +59,13 @@ module InputHandler
     }
   end
 
-  def check_input_limits
-    raise 'NOT ENOUGH MODES' if settings[:mode_limit].min > tokens[:modes].length
+  def check_for_mode_tokens
+    modes_found = tokens[:modes].length
+    modes_needed = settings[:mode_limit]
+    
+    unless modes_needed.include? modes_found
+      raise CommandErrors::InputError.new('Modes', modes_found, modes_needed) 
+    end
   end
 
   def cull_tokens
@@ -75,7 +80,7 @@ module InputHandler
   end
 
   def update
-    raise "Mode is nil" if mode.nil?
+    raise CommandErrors::InvalidModeError.new('Nil') if mode.nil?
 
     merge_settings
 

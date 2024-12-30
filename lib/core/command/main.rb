@@ -3,9 +3,13 @@
 require 'dir_req'
 
 # Require needed directories (like normal)
-DirReq.require_directory Dir.home + '/commands/lib/core/command/modules'
-DirReq.require_directory Dir.home + '/commands/lib/core/command/errors'
-DirReq.require_directory Dir.home + '/commands/lib/core/extensions'
+[
+  '/commands/lib/core/command/modules',
+  '/commands/lib/core/command/errors',
+  '/commands/lib/core/extensions'
+].each do |path|
+  DirReq.require_directory Dir.home + path
+end
 
 class Command
   include InputHandler
@@ -17,9 +21,12 @@ class Command
   include BasicFunctions
   include StateShortcuts
   include Prompter
+  include CommandErrors
+
+  # COMMAND_CORE_DIRECTORY = File.dirname(__FILE__)
   
   attr_accessor :raw, :tokens, :state,
-  :options, :settings, :adjustments
+  :options, :settings, :adjustments, :directives
 
   def initialize(argv = [])
     set_default_attributes
@@ -46,7 +53,12 @@ class Command
   end
 
   def check_for_parameters(number)
-    raise "NOT ENOUGH PARAMETERS" unless state[:settings][:parameter_limit].include? parameters.length
+    parameters_found = parameters.length
+    parameters_needed = state[:settings][:parameter_limit]
+
+    unless parameters_needed.include? parameters_found
+      raise CommandErrors::InputError.new('Parameters', parameters_found, parameters_needed) 
+    end
   end
 
   def run

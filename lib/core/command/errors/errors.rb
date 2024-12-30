@@ -1,29 +1,25 @@
 # frozen_string_literal: true
 
 module CommandErrors
-  class CommandError < ::StandardError; end
+  class CommandError < StandardError; end
+  class QuantityError < CommandError; end
 
-  # Used to alert the user that an invalid flag has been detected. Reminds user
-  # what the valid flags are.
+  class InputError < QuantityError 
+    def initialize(entity, quantity, requirement) 
+      super "Not enough #{entity} \nFound: #{quantity} \nNeed: #{requirement}"
+    end
+  end
+
+  class InvalidModeError < CommandError
+    def initialize(mode_found)
+      super "Invalid Mode: #{mode_found}"
+    end
+  end
+
   class InvalidFlagError < CommandError
-    def initialize(input:, position:, acceptable:)
-      super("\nInvalid flag '#{input}' passed in position #{position}. \nAcceptable flags are: #{acceptable}")
+    def initialize(flag_found, options)
+
+      super "Invalid flag: #{flag_found} \nOptions: \n#{options}"
     end
   end
-
-  class FlagAssignmentError < CommandError
-    def initialize
-      super("\nInvalid Flag Assignment. \nThe flags '-h' and '--help' are reserved by the Command class.")
-    end
-  end
-
-  class InputError < CommandError; end
-
-  class InputQuantityError < InputError
-    def initialize(name, received, limit)
-      super("Wrong number of #{name}:\n#{received} (#{received.length} / #{limit})")
-    end
-  end
-
-  class ResponseError < InputError; end
 end

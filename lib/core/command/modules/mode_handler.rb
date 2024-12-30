@@ -42,7 +42,7 @@ module ModeHandler
 
   def verify_mode_tokens
     tokens[:modes].each do |token|
-      raise "INVALID FLAG: #{token}\nOPTIONS: #{options}" unless flags.include? token
+      raise CommandErrors::InvalidFlagError.new(token, options) unless flags.include? token
     end
   end
 

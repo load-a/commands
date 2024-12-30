@@ -7,15 +7,15 @@ module SettingsHandler
 
   # This needs to override everything else.
   MANDATORY_SETTINGS = {
+    active_mode: nil,
+    core_modes: [],
+    input_modes: [],
     case_sensitivity: [:parameters],
     default_mode: :inspect,
     mode_limit: (0..1),
     parameter_limit: (1..9),
     execution_directory: nil,
-    send_directory: nil,
-    core_modes: [],
-    input_modes: [],
-    active_mode: nil,
+    send_directory: nil
   }.freeze
 
   def generate_settings
