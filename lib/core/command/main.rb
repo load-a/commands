@@ -52,6 +52,13 @@ class Command
     }
   end
 
+  def enforce_directives
+    return unless directives
+    directives.each do |key, value|
+      state[:settings][key] = value
+    end
+  end
+
   def check_for_parameters(number)
     parameters_found = parameters.length
     parameters_needed = state[:settings][:parameter_limit]

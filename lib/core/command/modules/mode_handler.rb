@@ -4,7 +4,7 @@ module ModeHandler
   MANDATORY_OPTIONS = {
     bypass: 'b+', # Use in development to bypass Mode Check
     configure: 'c+',
-    help: 'h+',
+    help: %w[h+ man --manual m+],
     inspect: 'i+',
     reset: 'r+'
   }.freeze

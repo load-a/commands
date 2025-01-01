@@ -10,26 +10,29 @@ class Forge < Command
       make: %w[m mk],
       remove: %w[r rm],
       copy: %w[c cp],
-      script: %w[s scr]
+      rename: %w[n --name mv rn]
     }
 
     self.settings = {
       default_mode: :make,
       send_directory: Dir.pwd,
       case_sensitivity: %i[settings parameters],
-      type: nil,
-      subtype: nil,
+      type: '',
+      subtype: '',
       parameter_limit: (1..9),
-      mode_limit: (0..2)
+      mode_limit: (0..2),
+      filepath: '',
+      file_dir: '',
+      filename: ''
     }
 
     self.adjustments = {
       make: {
         overwrite: false,
-        generate: false
+        generate: false,
       },
       copy: {
-        original: nil,
+        original: '',
         copies: [],
         overwrite: false,
         parameter_limit: (2..9),
@@ -37,17 +40,18 @@ class Forge < Command
       },
       remove: {
         check: 2,
-        directory: false
+        directory: false,
       },
       script: {
         parameter_limit: (1..1)
+      },
+      rename: {
+        parameter_limit: (2..2)
       }
     }
     self.directives = {
       execution_directory: Dir.home + '/commands/lib/commands/forge',
-      case_sensitivity: %i[settings parameters],
-      type: state&.dig(:settings, :type)&.to_sym,
-      subtype: state&.dig(:settings, :subtype)&.to_sym
+      case_sensitivity: %i[settings parameters]
     }
 
     @extension = ''
@@ -56,16 +60,8 @@ class Forge < Command
     super
   end
 
-  def enforce_directives
-    directives.each do |key, value|
-      state[:settings][key] = value
-    end
-  end
-
-
-
   def resolve_path(path)
-    File.expand_path(path)
+    File.expand_path(path.to_s)
   end
 
   def path_conflict?(input_file, expanded_file)
@@ -105,12 +101,15 @@ class Forge < Command
    end
  end
 
- def generate_file_path_and_contents(file_parameter)
-  get_template(File.basename(file_parameter)) if self[:type]
+ # Generates the full path based on the input filename and template extension
+ def determine_file_settings(file_parameter)
+  filepath = determine_file_path(file_parameter)
 
-  filename = determine_file_path(file_parameter)
-  filename = "#{filename}.#{@extension}" unless @extension.empty?
-  filename
+  self[:filepath] = filepath
+  self[:filepath] += ".#{@extension}" unless @extension.empty?
+
+  self[:file_dir] = File.dirname(filepath)
+  self[:filename] = File.basename(filepath)
  end
 
   # Steps to make a file
@@ -127,38 +126,51 @@ class Forge < Command
   # - Make the file
   # - Grant necessary permissions
 
-  def make_file(file_parameter = parameters.first, contents = nil)
-    filepath = generate_file_path_and_contents(file_parameter)
-    file_dir = File.dirname(filepath)
+  def generate_template(file_parameter)
+    load_template(File.basename(file_parameter)) if self[:type]
+  end
 
-    unless Dir.exist? file_dir
+  def make_file(file_parameter = parameters.first, contents = nil)
+    determine_file_settings(file_parameter)
+
+    generate_directory
+
+    return puts "Cannot overwrite file: #{self[:filepath]}" if File.exist?(self[:filepath]) && self[:overwrite] == false
+
+    puts "Writing file: #{self[:filepath]}"
+    contents = @contents if contents.nil?
+
+    IO.write self[:filepath], contents
+  end
+
+  def generate_directory
+    unless Dir.exist? self[:file_dir]
       if self[:generate]
-        system "mkdir #{file_dir}"
+        system "mkdir #{self[:file_dir]}"
       else
         raise "Directory does not exist" 
       end
     end
+  end
 
-    return puts "Cannot overwrite file: #{filepath}" if File.exist?(filepath) && self[:overwrite] == false
-
-    puts "Writing file: #{filepath}"
-    contents = @contents if contents.nil?
-
-    IO.write filepath, contents
+  def generate_script(script_name)
+    # make bin
+    # make lib/commands/
+    # make main, help.md and config
+    # Give rwx-rx-x permissions to bin
   end
 
   def remove_file(file_parameter = parameters.first)
-    filepath = generate_file_path_and_contents(file_parameter)
-    file_dir = File.dirname(filepath)
+    determine_file_settings(file_parameter)
 
-    return puts "Cannot Remove: #{filepath} -- Does not exist." unless File.exist? filepath
+    return puts "Cannot Remove: #{self[:filepath]} -- Does not exist." unless File.exist? self[:filepath]
 
-    puts "Removing file: #{filepath}"
-    system "rm #{filepath}"
+    puts "Removing file: #{self[:filepath]}"
+    system "rm #{self[:filepath]}"
 
     if self[:directory]
-      puts "Removing directory: #{file_dir}"
-      system "rmdir #{file_dir}"
+      puts "Removing directory: #{self[:file_dir]}"
+      system "rmdir #{self[:file_dir]}"
     end
   end
 
@@ -166,62 +178,77 @@ class Forge < Command
     if self[:type] == nil
       filename
     else
-      get_template(File.base_name(filename))
+      load_template(File.base_name(filename))
       "#{filename}.#{@extension}"
     end
   end
 
-  def get_template(file_title)
+  def load_template(file_title)
     @extension, @contents = switch_type
-    get_contents(file_title)
+    load_contents(file_title)
   end
 
   def switch_type
     text_template = "#{TEMPLATES}/text/template"
     code_template = "#{TEMPLATES}/code/template"
 
-    case self[:type].to_sym
-    when :text
+    case self[:type]
+    when 'text'
       ['txt', "#{text_template}.txt"]
-    when :markdown
+    when 'markdown'
       ['md', "#{text_template}.md"]
-    when :c
+    when 'c'
       ['c', "#{code_template}.c"]
-    when :cobol
+    when 'cobol'
       ['cob', "#{code_template}.cob"]
-    when :cpp
+    when 'cpp'
       ['cpp', "#{code_template}.cpp"]
-    when :java
+    when 'java'
       ['java',
        (self[:subtype].downcase == 'main' ? "#{TEMPLATES}/code/main_template.java" : "#{code_template}.java")]
-     when :ruby
+     when 'ruby'
       ['rb', "#{code_template}.rb"]
-    when :rust
+    when 'rust'
       ['rs', "#{code_template}.rs"]
+    when 'script'
+      raise "Not implemented"
     else
       raise 'Invalid Type'
     end
   end
 
-  def get_contents(file_title)
+  def load_contents(file_title)
     @contents = File.read @contents
     @contents.gsub!('THIS', file_title.capitalize)
   end
 
   def copy_file(original, copy)
-    original = generate_file_path_and_contents(original)
-    copy = generate_file_path_and_contents(copy)
+    determine_file_settings(original)
+    original = self[:filepath]
+
+    determine_file_settings(copy)
+    copy = self[:filepath]
 
     return puts "Cannot copy #{original} -- File does not exist" unless File.exist?(original)
     return puts "Cannot generate #{copy} -- File does not exist or Setting is false" unless File.exist?(copy) || self[:generate]
     return puts "Cannot overwrite #{copy} -- Setting is false" if File.exist?(copy) && self[:overwrite] == false
 
-    # Might be necessary; Implemented this way because the protections in make_file might be utilized when making copies
-    # More investigation needed
-    @contents = File.read original
-    make_file(copy, @contents)
-    
+    IO.write copy, File.read(original)
     puts "Copying #{original} -> #{copy}"
+  end
+
+  def rename_file(original, new_name)
+    determine_file_settings(original)
+    old_name = self[:filepath]
+
+    determine_file_settings(new_name)
+    new_name = self[:filepath]
+
+    if confirm? "Rename: #{old_name} -> #{new_name}? (y/n)"
+      system "mv #{old_name} #{new_name}"
+    else
+      exit 1
+    end
   end
 
   def run
@@ -233,7 +260,11 @@ class Forge < Command
       case mode
       when :make
         check_for_empty_filename
-        each_parameter(:make_file)
+
+        each_parameter do |file|
+          generate_template(file)
+          make_file(file)
+        end
       when :remove
         check_for_empty_filename
         files_to_remove = parameters.length
@@ -247,6 +278,7 @@ class Forge < Command
         end
 
         each_parameter do |file|
+          generate_template(file)
           remove_file(file)
         end
       when :copy
@@ -259,8 +291,12 @@ class Forge < Command
         self[:copies].each do |copy|
           copy_file(self[:original], copy)
         end
-      when :script
+      when :rename
+        if parameters.length != 2
+          raise CommandErrors::InputError.new('parameters', parameters.length, self[:parameter_limit]) 
+        end
 
+        rename_file(parameters[0], parameters[1])
       end
     end
   end
