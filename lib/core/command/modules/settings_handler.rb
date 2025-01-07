@@ -12,7 +12,7 @@ module SettingsHandler
     input_modes: [],
     case_sensitivity: [:parameters],
     default_mode: :inspect,
-    mode_limit: (0..1),
+    mode_limit: (0..2),
     parameter_limit: (1..9),
     execution_directory: nil,
     send_directory: nil

@@ -88,7 +88,9 @@ module InputHandler
 
     state[:parameters] = tokens[:parameters]
 
-    state[:settings][:send_directory] = File.expand_path state[:settings][:send_directory]
+    unless self[:send_directory].nil?
+      state[:settings][:send_directory] = File.expand_path state[:settings][:send_directory] 
+    end
   end
 
   def merge_settings

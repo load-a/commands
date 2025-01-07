@@ -7,10 +7,10 @@ class Forge < Command
 
   def initialize(argv = [])
     self.options = {
-      make: %w[m mk],
-      remove: %w[r rm],
+      make: %w[m mk new w --new --write --create],
+      remove: %w[r rm d del --delete],
       copy: %w[c cp],
-      rename: %w[n --name mv rn]
+      rename: %w[n mv rn --name --move]
     }
 
     self.settings = {
@@ -68,6 +68,10 @@ class Forge < Command
     # 1. Is the input just the base name? [if so then return; no problem]
     # 2. Is the named directory different than the send directory? [if same then no problem]
     input_file == File.basename(expanded_file) && !(File.dirname(expanded_file) == self[:send_directory])
+    # @todo This and the resolution are confusing the issue. This check and the resolution have a direct relationship to the full path,
+    #   but rn only the resolution is determining that.
+    #   If the FILE is just a basename, then use the send_directory
+    #   If the file is not, resolve the conflict manually
   end
 
   def resolve_conflict(input_file, expanded_file)
@@ -127,7 +131,7 @@ class Forge < Command
   # - Grant necessary permissions
 
   def generate_template(file_parameter)
-    load_template(File.basename(file_parameter)) if self[:type]
+    load_template(File.basename(file_parameter)) unless self[:type].empty?
   end
 
   def make_file(file_parameter = parameters.first, contents = nil)

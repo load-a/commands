@@ -2,12 +2,16 @@
 
 class ::Numeric
   def round_up(increment = 10)
+    raise "Cannot round up by increments of Zero" if increment.zero?
+
     return self if (self % increment).zero?
 
     self + increment - (self % increment)
   end
 
   def round_down(increment = 10)
+    raise "Cannot round down by increments of Zero" if increment.zero?
+    
     return self if (self % increment).zero?
 
     self - (self % increment)
@@ -25,9 +29,17 @@ class ::Numeric
     self != 0
   end
 
-  def divisible_by?(divisor)
-    raise ZeroDivisionError if divisor.zero?
+  def divisible_by?(divisor, error: true)
+    raise ZeroDivisionError if divisor.zero? && error
+
+    return false if divisor.zero?
 
     (self % divisor).zero?
+  end
+
+  def natural_number?(include_zero: false, integer_value: false, tolerance: 1e-10)
+    return false if integer_value && (to_i - self).abs > tolerance
+
+    (include_zero ? not_negative? : positive?) && (integer_value || is_a?(Integer))
   end
 end
