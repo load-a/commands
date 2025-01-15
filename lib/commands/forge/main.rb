@@ -2,7 +2,15 @@
 
 require_relative '../../core/command/main'
 
+DirReq.require_directory File.dirname(__FILE__) + '/modules'
+
 class Forge < Command
+  include MakeMode
+  include RemoveMode
+  include CopyMode
+  include RenameMode
+  include PermitMode
+
   TEMPLATES = "#{File.dirname(__FILE__)}/templates"
 
   def initialize(argv = [])
@@ -10,7 +18,8 @@ class Forge < Command
       make: %w[m mk new w --new --write --create],
       remove: %w[r rm d del --delete],
       copy: %w[c cp],
-      rename: %w[n mv rn --name --move]
+      rename: %w[n mv rn --name --move],
+      permit: %w[p --perm],
     }
 
     self.settings = {
@@ -39,7 +48,7 @@ class Forge < Command
         generate: true
       },
       remove: {
-        check: 2,
+        check: 3,
         directory: false,
       },
       script: {
@@ -47,6 +56,9 @@ class Forge < Command
       },
       rename: {
         parameter_limit: (2..2)
+      },
+      permit: {
+        permissions: 'rwx-rx-x'
       }
     }
     self.directives = {
@@ -59,51 +71,6 @@ class Forge < Command
 
     super
   end
-
-  def resolve_path(path)
-    File.expand_path(path.to_s)
-  end
-
-  def path_conflict?(input_file, expanded_file)
-    # 1. Is the input just the base name? [if so then return; no problem]
-    # 2. Is the named directory different than the send directory? [if same then no problem]
-    input_file == File.basename(expanded_file) && !(File.dirname(expanded_file) == self[:send_directory])
-    # @todo This and the resolution are confusing the issue. This check and the resolution have a direct relationship to the full path,
-    #   but rn only the resolution is determining that.
-    #   If the FILE is just a basename, then use the send_directory
-    #   If the file is not, resolve the conflict manually
-  end
-
-  def resolve_conflict(input_file, expanded_file)
-    inffered_directory = File.dirname(expanded_file)
-    send_directory = self[:send_directory]
-
-    inferred_prompt = [
-      "Forge encountered a path conflict:",
-      "The Inferred Directory is: #{inffered_directory}",
-      "but the Send Directory is: #{send_directory}",
-      "Use the inferred path: #{expanded_file}? (y/n)"
-    ]
-
-    use_inferred = confirm? inferred_prompt.join("\n")
-
-    return self[:send_directory] = inffered_directory if use_inferred
-
-    return if confirm? "Use :send_directory #{send_directory}/#{input_file}?"
-
-    raise CommandErrors::CommandError.new "Unresolved Path Conflict"
-  end
-
-  def determine_file_path(filename)
-    expanded_path = resolve_path(filename)
-
-    if path_conflict?(filename, expanded_path)
-     resolve_conflict(filename, expanded_path) 
-     "#{self[:send_directory]}/#{filename}"
-   else
-     expanded_path
-   end
- end
 
  # Generates the full path based on the input filename and template extension
  def determine_file_settings(file_parameter)
@@ -132,50 +99,6 @@ class Forge < Command
 
   def generate_template(file_parameter)
     load_template(File.basename(file_parameter)) unless self[:type].empty?
-  end
-
-  def make_file(file_parameter = parameters.first, contents = nil)
-    determine_file_settings(file_parameter)
-
-    generate_directory
-
-    return puts "Cannot overwrite file: #{self[:filepath]}" if File.exist?(self[:filepath]) && self[:overwrite] == false
-
-    puts "Writing file: #{self[:filepath]}"
-    contents = @contents if contents.nil?
-
-    IO.write self[:filepath], contents
-  end
-
-  def generate_directory
-    unless Dir.exist? self[:file_dir]
-      if self[:generate]
-        system "mkdir #{self[:file_dir]}"
-      else
-        raise "Directory does not exist" 
-      end
-    end
-  end
-
-  def generate_script(script_name)
-    # make bin
-    # make lib/commands/
-    # make main, help.md and config
-    # Give rwx-rx-x permissions to bin
-  end
-
-  def remove_file(file_parameter = parameters.first)
-    determine_file_settings(file_parameter)
-
-    return puts "Cannot Remove: #{self[:filepath]} -- Does not exist." unless File.exist? self[:filepath]
-
-    puts "Removing file: #{self[:filepath]}"
-    system "rm #{self[:filepath]}"
-
-    if self[:directory]
-      puts "Removing directory: #{self[:file_dir]}"
-      system "rmdir #{self[:file_dir]}"
-    end
   end
 
   def check_for_template(filename)
@@ -211,7 +134,8 @@ class Forge < Command
       ['java',
        (self[:subtype].downcase == 'main' ? "#{TEMPLATES}/code/main_template.java" : "#{code_template}.java")]
      when 'ruby'
-      ['rb', "#{code_template}.rb"]
+      ['rb', 
+        self[:subtype] == 'module' ? "#{TEMPLATES}/code/module_template.rb" :  "#{code_template}.rb"]
     when 'rust'
       ['rs', "#{code_template}.rs"]
     when 'script'
@@ -224,35 +148,6 @@ class Forge < Command
   def load_contents(file_title)
     @contents = File.read @contents
     @contents.gsub!('THIS', file_title.capitalize)
-  end
-
-  def copy_file(original, copy)
-    determine_file_settings(original)
-    original = self[:filepath]
-
-    determine_file_settings(copy)
-    copy = self[:filepath]
-
-    return puts "Cannot copy #{original} -- File does not exist" unless File.exist?(original)
-    return puts "Cannot generate #{copy} -- File does not exist or Setting is false" unless File.exist?(copy) || self[:generate]
-    return puts "Cannot overwrite #{copy} -- Setting is false" if File.exist?(copy) && self[:overwrite] == false
-
-    IO.write copy, File.read(original)
-    puts "Copying #{original} -> #{copy}"
-  end
-
-  def rename_file(original, new_name)
-    determine_file_settings(original)
-    old_name = self[:filepath]
-
-    determine_file_settings(new_name)
-    new_name = self[:filepath]
-
-    if confirm? "Rename: #{old_name} -> #{new_name}? (y/n)"
-      system "mv #{old_name} #{new_name}"
-    else
-      exit 1
-    end
   end
 
   def run
@@ -301,6 +196,9 @@ class Forge < Command
         end
 
         rename_file(parameters[0], parameters[1])
+      when :permit
+        each_parameter(:permit)
+        puts "permissions are #{Normalize.from_string self[:permissions]}"
       end
     end
   end

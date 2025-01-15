@@ -17,6 +17,7 @@ class Command
   include SettingsHandler
   include AdjustmentHandler
   include ParameterHandler
+  include FileManager
 
   include BasicFunctions
   include StateShortcuts
@@ -73,4 +74,6 @@ class Command
       send(mode)
     end
   end
+
+  def bypass; end
 end
