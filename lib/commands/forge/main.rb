@@ -62,7 +62,7 @@ class Forge < Command
       }
     }
     self.directives = {
-      execution_directory: Dir.home + '/commands/lib/commands/forge',
+      execution_directory: File.dirname(__FILE__),
       case_sensitivity: %i[settings parameters]
     }
 
@@ -160,6 +160,8 @@ class Forge < Command
       when :make
         check_for_empty_filename
 
+        return generate_script(parameters.first) if self[:type] == 'script'
+
         each_parameter do |file|
           generate_template(file)
           make_file(file)
@@ -167,6 +169,8 @@ class Forge < Command
       when :remove
         check_for_empty_filename
         files_to_remove = parameters.length
+
+        return remove_script(parameters.first) if self[:type] == 'script'
 
         if files_to_remove >= self[:check] 
           confirm_prompt = [

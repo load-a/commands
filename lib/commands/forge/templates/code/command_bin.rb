@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-require_relative 'auxiliaries/THIS/main'
+require_relative '../lib/commands/filename/main'
 
-THIS.new(ARGV).run
+CLASSNAME.new(ARGV).run

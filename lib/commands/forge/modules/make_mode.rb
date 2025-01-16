@@ -25,9 +25,36 @@ module MakeMode
   end
 
   def generate_script(script_name)
-    # make bin
-    # make lib/commands/
-    # make main, help.md and config
-    # Give rwx-rx-x permissions to bin
+    lib = resolve_path("#{self[:execution_directory]}/../#{script_name}")
+    templates = "#{self[:execution_directory]}/templates/code"
+    class_name = script_name.upperCamelCase
+    other_files = %w[config.rb help.md]
+
+    # Make the lib and module directories
+    system "mkdir #{lib}" 
+    system "mkdir #{lib}/modules"
+
+    # Write the main file
+    main = File.read("#{templates}/command_main.rb")
+    main.sub!('CLASSNAME', class_name)
+    main.sub!('filename', script_name) # :execution_directory in settings
+    IO.write "#{lib}/main.rb", main
+
+    # Create other files
+    other_files.each do |file|
+      IO.write "#{lib}/#{file}", ""
+    end
+
+    # Write the bin
+    bin = resolve_path("#{lib}/../../../bin")
+    executable = File.read "#{templates}/command_bin.rb"
+    executable.sub!('filename', script_name) # The require line
+    executable.sub!('CLASSNAME', class_name) # The class name
+
+    IO.write "#{bin}/#{script_name}", executable
+    
+    system "chmod 751 #{bin}/#{script_name}"
+
+    puts "#{class_name} Command generated!"
   end
 end

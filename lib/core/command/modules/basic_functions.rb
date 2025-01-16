@@ -8,7 +8,13 @@ module BasicFunctions
 
   def help
     puts 'HELP MODE:'
-    display_hash options, 2
+    help_file = "#{self[:execution_directory]}/help.md"
+
+    if File.empty?(help_file) || !File.exist?(help_file)
+      display_hash options, 2
+    else
+      system "cat #{help_file}"
+    end
   end
 
   def inspect

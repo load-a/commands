@@ -1,15 +1,30 @@
 # frozen_string_literal: true
 
-require_relative '../_command/command'
+require_relative '../../core/command/main'
 
-class THIS < Command
-  def initialize(argv, option_range: (0..1), parameter_range: (0..1), case_sensitive: false)
-    self.mode_list = {
-      # verbose: 'simple', (dash is optional)
-      # verbose: w%[simple_1, simple_2]
-    }
-    super
-  end
+DirReq.require_directory File.dirname(__FILE__) + '/modules'
+
+class CLASSNAME < Command
+  def initialize(argv = [])
+      self.options = {}
+
+      self.settings = {
+        default_mode: :bypass,
+        send_directory: Dir.pwd,
+        case_sensitivity: %i[settings parameters],
+        parameter_limit: (1..9),
+        mode_limit: (0..2),
+      }
+
+      self.adjustments = {}
+
+      self.directives = {
+        execution_directory: File.dirname(__FILE__),
+        case_sensitivity: %i[settings parameters]
+      }
+
+      super
+    end
 
   def run
     super

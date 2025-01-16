@@ -23,14 +23,14 @@ module Prompter
   alias answer_to ask
 
   def confirm?(question = "Are you sure? y/n")
-    AFFIRMATIVE.include? answer_to question
+    AFFIRMATIVE.include? answer_to "#{question} (y/n)"
   end
 
   alias said_yes_to? confirm?
   alias yes? confirm?
 
   def deny?(question = 'Do you mind? n/y')
-    NEGATIVE.include answer_to question
+    NEGATIVE.include answer_to "#{question} (y/n)"
   end
 
   alias said_no_to? deny?

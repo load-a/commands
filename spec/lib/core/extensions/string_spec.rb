@@ -120,4 +120,12 @@ RSpec.describe String do
       end
     end
   end
+
+  describe "upperCamelCase" do
+    it 'converts strings with spaces, dashes and under scores' do
+      expect("A string this is".upper_camel).to match "AStringThisIs"
+      expect('this_too_is_a_string'.upperCamelCase).to match 'ThisTooIsAString'
+      expect('and one_more for_good-luck'.upper_camel_case).to match 'AndOneMoreForGoodLuck'
+    end
+  end
 end

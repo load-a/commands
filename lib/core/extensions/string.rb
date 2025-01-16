@@ -25,4 +25,12 @@ class ::String
       default
     end
   end
+
+  def upperCamelCase
+    split(/[_\s\-]/).map(&:capitalize).join
+  end
+
+  alias upperCamel upperCamelCase
+  alias upper_camel_case upperCamelCase
+  alias upper_camel upperCamelCase
 end
