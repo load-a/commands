@@ -54,13 +54,13 @@ MODES
 
     save:
       ["-s", "--save"]
-      Saves a vault’s `.obsidian` folder to a `.backup` folder.
+      Saves a vault’s `.obsidian` folder to a `.backup` folder. (If no vault is specified the Master Config Folder will be used.)
       Example:
           vault -s important_vault
 
     load:
       ["-l", "--load"]
-      Restores a vault’s `.obsidian` folder from its `.backup` folder.
+      Restores a vault’s `.obsidian` folder from its `.backup` folder. (If no vault is specified the Master Config Folder will be used.)
       Example:
           vault -l archived_vault
 
