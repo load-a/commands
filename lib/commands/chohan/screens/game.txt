@@ -1,0 +1,13 @@
+CHO-HAN GAME
+丁半ゲーム     
+
++-------+   +-------+
+|   DIE1   |   |   DIE2   |
++-------+   +-------+
+
+RESULT
+*  +SUM  *     *  DIFFERENCE  *
+
+You guessed: GUESS
+STATUS +$WINNINGS
+* * *
